@@ -1,0 +1,2502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0a0a0f"/>
+
+<!-- PWA Manifest & Icons -->
+<link rel="manifest" href="/manifest.json"/>
+<link rel="apple-touch-icon" href="/icon-192.png"/>
+
+<title>Sparq Enterprise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#18181f;--border:#2a2a38;
+  --accent:#f0c040;--accent2:#e07020;--text:#e8e8f0;--muted:#6666888;--muted2:#44445a;
+  --amazon:#ff9900;--takealot:#0079c2;--green:#30d080;--red:#f05050;
+  --card-radius:14px;--font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:14px;overflow-x:hidden;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+#app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:60px 1fr;height:100vh;}
+#topbar{grid-column:1/-1;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:100;}
+#sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:20px 0;display:flex;flex-direction:column;overflow-y:auto;}
+#main{overflow-y:auto;padding:28px;background:var(--bg);}
+
+.logo{font-family:var(--font-head);font-weight:800;font-size:18px;letter-spacing:-.5px;color:var(--accent);}
+.logo span{color:var(--text);opacity:.5;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.sync-status{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid;display:flex;align-items:center;gap:5px;}
+.sync-status.idle{color:var(--muted2);border-color:var(--border);}
+.sync-status.syncing{color:var(--accent);border-color:rgba(240,192,64,.3);background:rgba(240,192,64,.06);}
+.sync-status.ok{color:var(--green);border-color:rgba(48,208,128,.25);background:rgba(48,208,128,.06);}
+.sync-status.err{color:var(--red);border-color:rgba(240,80,80,.25);background:rgba(240,80,80,.06);}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+.sync-dot.pulse{animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+.nav-section{padding:8px 16px 4px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted2);font-family:var(--font-head);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;border-left:3px solid transparent;transition:all .15s;color:#8888aa;font-size:13px;}
+.nav-item:hover{background:rgba(240,192,64,.05);color:var(--text);}
+.nav-item.active{border-left-color:var(--accent);background:rgba(240,192,64,.08);color:var(--accent);}
+.nav-icon{width:18px;text-align:center;font-size:15px;}
+
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-radius);padding:20px;}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+.page{display:none;animation:fadeIn .2s ease;}
+.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-radius);padding:18px 20px;position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;top:0;right:0;width:60px;height:60px;border-radius:0 var(--card-radius) 0 60px;opacity:.06;}
+.stat-card.amber::after{background:var(--accent);}
+.stat-card.green::after{background:var(--green);}
+.stat-card.orange::after{background:var(--accent2);}
+.stat-card.blue::after{background:var(--takealot);}
+.stat-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);margin-bottom:6px;font-family:var(--font-head);}
+.stat-val{font-family:var(--font-head);font-size:26px;font-weight:700;line-height:1;}
+.stat-val.amber{color:var(--accent);}
+.stat-val.green{color:var(--green);}
+.stat-val.orange{color:var(--accent2);}
+.stat-sub{font-size:11px;color:var(--muted2);margin-top:6px;}
+
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:10px;}
+.page-title{font-family:var(--font-head);font-size:22px;font-weight:800;}
+.page-title span{color:var(--accent);}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-family:var(--font-mono);font-size:12px;font-weight:500;transition:all .15s;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-primary{background:var(--accent);color:#0a0a0f;font-weight:700;}
+.btn-primary:hover:not(:disabled){background:#ffd050;}
+.btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border);}
+.btn-secondary:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:rgba(240,80,80,.15);color:var(--red);border:1px solid rgba(240,80,80,.3);}
+.btn-amazon{background:rgba(255,153,0,.12);color:var(--amazon);border:1px solid rgba(255,153,0,.25);}
+.btn-amazon:hover:not(:disabled){background:rgba(255,153,0,.2);}
+.btn-takealot{background:rgba(0,121,194,.12);color:var(--takealot);border:1px solid rgba(0,121,194,.25);}
+.btn-takealot:hover:not(:disabled){background:rgba(0,121,194,.2);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+
+.form-row{display:grid;gap:12px;margin-bottom:14px;}
+.form-row.cols-2{grid-template-columns:1fr 1fr;}
+.form-row.cols-3{grid-template-columns:1fr 1fr 1fr;}
+label{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);margin-bottom:5px;font-family:var(--font-head);}
+input,select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:8px;font-family:var(--font-mono);font-size:13px;outline:none;transition:border .15s;}
+input:focus,select:focus{border-color:var(--accent);}
+input[type=password]{letter-spacing:.05em;}
+select option{background:var(--bg3);}
+
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{text-align:left;padding:10px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);border-bottom:1px solid var(--border);font-family:var(--font-head);font-weight:600;}
+.tbl td{padding:11px 14px;border-bottom:1px solid rgba(42,42,56,.5);font-size:13px;vertical-align:middle;}
+.tbl tr:hover td{background:rgba(240,192,64,.03);}
+.tbl tr:last-child td{border-bottom:none;}
+
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:500;}
+.tag-amazon{background:rgba(255,153,0,.15);color:var(--amazon);}
+.tag-takealot{background:rgba(0,121,194,.15);color:var(--takealot);}
+.tag-instock{background:rgba(48,208,128,.15);color:var(--green);}
+.tag-low{background:rgba(240,192,64,.15);color:var(--accent);}
+.tag-out{background:rgba(240,80,80,.15);color:var(--red);}
+.tag-ok{background:rgba(48,208,128,.12);color:var(--green);}
+.tag-warn{background:rgba(240,192,64,.12);color:var(--accent);}
+.tag-err{background:rgba(240,80,80,.12);color:var(--red);}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;backdrop-filter:blur(4px);align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;animation:modalIn .2s ease;}
+@keyframes modalIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.modal-title{font-family:var(--font-head);font-size:18px;font-weight:700;}
+.modal-close{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:20px;padding:4px;border-radius:6px;}
+.modal-close:hover{color:var(--text);}
+
+.divider{height:1px;background:var(--border);margin:20px 0;}
+.progress{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:8px;}
+.progress-bar{height:100%;border-radius:3px;transition:width .4s;}
+.empty{text-align:center;padding:48px 24px;color:var(--muted2);}
+.empty-icon{font-size:36px;margin-bottom:12px;opacity:.4;}
+.notice{background:rgba(240,192,64,.08);border:1px solid rgba(240,192,64,.2);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--accent);margin-bottom:20px;line-height:1.6;}
+.notice.green{background:rgba(48,208,128,.08);border-color:rgba(48,208,128,.2);color:var(--green);}
+.notice.red{background:rgba(240,80,80,.08);border-color:rgba(240,80,80,.2);color:var(--red);}
+.mono{font-family:var(--font-mono);}
+.pos{color:var(--green);}.neg{color:var(--red);}.neutral{color:var(--accent);}
+
+/* SETTINGS */
+.settings-section{margin-bottom:28px;}
+.settings-title{font-family:var(--font-head);font-size:15px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.cred-row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:10px;}
+.connection-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
+.connection-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.connection-name{font-family:var(--font-head);font-weight:700;font-size:15px;display:flex;align-items:center;gap:8px;}
+
+/* SYNC LOG */
+.sync-log{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;max-height:200px;overflow-y:auto;font-size:11px;font-family:var(--font-mono);}
+.log-line{padding:3px 0;border-bottom:1px solid rgba(42,42,56,.4);display:flex;gap:8px;}
+.log-line:last-child{border-bottom:none;}
+.log-time{color:var(--muted2);min-width:70px;}
+.log-ok{color:var(--green);}
+.log-err{color:var(--red);}
+.log-info{color:var(--accent);}
+
+/* COST BREAKDOWN */
+.cost-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed rgba(42,42,56,.6);}
+.cost-row:last-child{border-bottom:none;}
+.cost-row .c-label{color:var(--muted2);font-size:12px;}
+
+.channel-row{display:flex;gap:8px;margin-bottom:16px;}
+.channel-chip{padding:6px 14px;border-radius:20px;border:1px solid var(--border);cursor:pointer;font-size:12px;transition:all .15s;color:var(--muted2);}
+.channel-chip.all.active,.channel-chip.all:hover{border-color:var(--accent);color:var(--accent);background:rgba(240,192,64,.08);}
+.channel-chip.amazon.active,.channel-chip.amazon:hover{border-color:var(--amazon);color:var(--amazon);background:rgba(255,153,0,.08);}
+.channel-chip.takealot.active,.channel-chip.takealot:hover{border-color:var(--takealot);color:var(--takealot);background:rgba(0,121,194,.08);}
+
+/* BANK / FINANCE */
+.balance-hero{background:linear-gradient(135deg,#0d1a0d 0%,#0a1a10 100%);border:1px solid rgba(48,208,128,.2);border-radius:var(--card-radius);padding:28px 32px;margin-bottom:24px;position:relative;overflow:hidden;}
+.balance-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(48,208,128,.12) 0%,transparent 70%);}
+.balance-label{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:rgba(48,208,128,.6);font-family:var(--font-head);margin-bottom:8px;}
+.balance-amount{font-family:var(--font-head);font-size:42px;font-weight:800;color:var(--green);line-height:1;}
+.balance-amount.neg{color:var(--red);}
+.balance-sub{font-size:12px;color:rgba(48,208,128,.5);margin-top:8px;}
+.balance-row{display:flex;gap:32px;margin-top:20px;}
+.balance-stat{display:flex;flex-direction:column;gap:3px;}
+.balance-stat-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);}
+.balance-stat-val{font-family:var(--font-head);font-size:16px;font-weight:700;}
+
+.ledger-line{display:grid;grid-template-columns:90px 1fr auto auto;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(42,42,56,.5);font-size:13px;}
+.ledger-line:hover{background:rgba(240,192,64,.03);}
+.ledger-line:last-child{border-bottom:none;}
+.ledger-date{font-size:11px;color:var(--muted2);font-family:var(--font-mono);}
+.ledger-desc{display:flex;flex-direction:column;gap:2px;}
+.ledger-sub{font-size:11px;color:var(--muted2);}
+.ledger-amount{font-family:var(--font-head);font-weight:700;font-size:14px;text-align:right;}
+.ledger-balance{font-family:var(--font-mono);font-size:12px;color:var(--muted2);text-align:right;}
+
+.txn-in{color:var(--green);}
+.txn-out{color:var(--red);}
+.txn-neutral{color:var(--accent);}
+
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.05em;}
+.pill-sale{background:rgba(48,208,128,.12);color:var(--green);}
+.pill-purchase{background:rgba(240,80,80,.12);color:var(--red);}
+.pill-adjust{background:rgba(240,192,64,.12);color:var(--accent);}
+
+/* AI STYLES */
+.ai-chat{display:flex;flex-direction:column;height:480px;}
+.ai-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;}
+.ai-msg{max-width:85%;padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.6;}
+.ai-msg.user{align-self:flex-end;background:var(--accent);color:#0a0a0f;border-radius:12px 12px 2px 12px;font-weight:500;}
+.ai-msg.assistant{align-self:flex-start;background:var(--bg3);border:1px solid var(--border);border-radius:12px 12px 12px 2px;}
+.ai-msg.thinking{opacity:.6;font-style:italic;}
+.ai-input-row{display:flex;gap:8px;padding:14px;border-top:1px solid var(--border);background:var(--bg2);}
+.ai-input-row input{flex:1;border-radius:24px;padding:10px 16px;}
+.ai-input-row button{border-radius:24px;padding:10px 18px;white-space:nowrap;}
+
+.insight-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start;line-height:1.6;font-size:13px;}
+.insight-icon{font-size:20px;min-width:28px;margin-top:1px;}
+.insight-body strong{font-family:var(--font-head);font-size:13px;display:block;margin-bottom:3px;}
+
+.forecast-bar-row{display:grid;grid-template-columns:60px 1fr 80px;gap:10px;align-items:center;padding:6px 0;font-size:12px;}
+.forecast-bar-row .bar-wrap{background:var(--bg3);border-radius:4px;height:8px;overflow:hidden;}
+.forecast-bar-row .bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .5s;}
+
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:16px;}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(240,192,64,.04);}
+.upload-zone input{display:none;}
+.upload-icon{font-size:32px;margin-bottom:8px;opacity:.5;}
+.upload-text{font-size:13px;color:var(--muted2);}
+.upload-text strong{color:var(--accent);}
+
+.pricing-result{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:14px;}
+.price-tier{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(42,42,56,.5);}
+.price-tier:last-child{border-bottom:none;}
+.price-tier-label{font-size:12px;color:var(--muted2);}
+.price-tier-val{font-family:var(--font-head);font-weight:700;font-size:16px;}
+
+@media(max-width:768px){
+  #app{grid-template-columns:1fr;grid-template-rows:60px auto 1fr;}
+  #sidebar{grid-row:2;flex-direction:row;overflow-x:auto;padding:8px 12px;border-right:none;border-bottom:1px solid var(--border);gap:4px;}
+  .nav-section{display:none;}
+  .nav-item{border-left:none;border-bottom:3px solid transparent;padding:8px 12px;white-space:nowrap;border-radius:8px;}
+  .nav-item.active{border-bottom-color:var(--accent);border-left-color:transparent;}
+  #main{padding:16px;}
+  .two-col{grid-template-columns:1fr;}
+  .form-row.cols-2,.form-row.cols-3{grid-template-columns:1fr;}
+  .stats-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div id="topbar">
+  <div class="logo">SPARQ<span> ENTERPRISE</span></div>
+  <div class="topbar-right">
+    <div class="sync-status idle" id="syncStatusBadge"><div class="sync-dot" id="syncDot"></div><span id="syncStatusText">Not synced</span></div>
+    <button class="btn btn-secondary btn-sm" onclick="syncAll()" id="syncBtn">⟳ Sync All</button>
+    <span style="font-size:11px;color:var(--muted2);" id="dateDisplay"></span>
+  </div>
+</div>
+
+<div id="sidebar">
+  <div class="nav-section">Overview</div>
+  <div class="nav-item active" onclick="navigate('dashboard')"><span class="nav-icon">⚡</span> Dashboard</div>
+  <div class="nav-section">Inventory</div>
+  <div class="nav-item" onclick="navigate('products')"><span class="nav-icon">📦</span> Products</div>
+  <div class="nav-item" onclick="navigate('stock')"><span class="nav-icon">🗃️</span> Stock Levels</div>
+  <div class="nav-section">Commerce</div>
+  <div class="nav-item" onclick="navigate('sales')"><span class="nav-icon">💳</span> Daily Sales</div>
+  <div class="nav-item" onclick="navigate('costing')"><span class="nav-icon">🧮</span> Cost Calculator</div>
+  <div class="nav-section">Finance</div>
+  <div class="nav-item" onclick="navigate('accounting')"><span class="nav-icon">📊</span> Accounting</div>
+  <div class="nav-item" onclick="navigate('batches')"><span class="nav-icon">📥</span> Import Batches</div>
+  <div class="nav-item" onclick="navigate('bank')"><span class="nav-icon">🏦</span> Bank Ledger</div>
+  <div class="nav-item" onclick="navigate('purchases')"><span class="nav-icon">🧾</span> Purchases</div>
+  <div class="nav-item" onclick="navigate('cashflow')"><span class="nav-icon">💹</span> Cash Flow</div>
+  <div class="nav-section">Intelligence</div>
+  <div class="nav-item" onclick="navigate('ai')"><span class="nav-icon">✨</span> Ask Sparq</div>
+  <div class="nav-item" onclick="navigate('insights')"><span class="nav-icon">🧠</span> AI Insights</div>
+  <div class="nav-item" onclick="navigate('forecast')"><span class="nav-icon">🔮</span> Forecast</div>
+  <div class="nav-item" onclick="navigate('pricing')"><span class="nav-icon">💰</span> Pricing Advisor</div>
+  <div class="nav-item" onclick="navigate('reorder')"><span class="nav-icon">📦</span> Reorder</div>
+  <div class="nav-item" onclick="navigate('invoice')"><span class="nav-icon">🧾</span> Invoice Reader</div>
+  <div class="nav-section">System</div>
+  <div class="nav-item" onclick="navigate('sync')"><span class="nav-icon">🔄</span> Sync Center</div>
+  <div class="nav-item" onclick="navigate('settings')"><span class="nav-icon">⚙️</span> Settings</div>
+</div>
+
+<div id="main">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-header">
+      <div class="page-title">Good morning, <span>Jarred</span></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="syncAll()">⟳ Quick Sync</button>
+        <button class="btn btn-primary" onclick="openModal('modalSale')">+ Log Sale</button>
+      </div>
+    </div>
+    <div id="dashApiNotice"></div>
+    <div class="stats-grid" id="dashStats"></div>
+    <div class="two-col">
+      <div class="card"><div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Recent Sales</div><div id="dashRecentSales"></div></div>
+      <div class="card"><div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Stock Alerts</div><div id="dashStockAlerts"></div></div>
+    </div>
+  </div>
+
+  <!-- PRODUCTS -->
+  <div class="page" id="page-products">
+    <div class="page-header">
+      <div class="page-title">Products</div>
+      <button class="btn btn-primary" onclick="openModal('modalProduct')">+ Add Product</button>
+    </div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="tbl"><thead><tr><th>Product</th><th>SKU</th><th>USD Cost</th><th>Batch Rate</th><th>Channels</th><th>Sell Price</th><th>Landed Cost</th><th>Margin</th><th></th></tr></thead>
+      <tbody id="productsBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- STOCK -->
+  <div class="page" id="page-stock">
+    <div class="page-header">
+      <div class="page-title">Stock <span>Levels</span></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-takealot btn-sm" onclick="syncTakealotOffers()">⟳ Sync Takealot</button>
+        <button class="btn btn-amazon btn-sm" onclick="syncAmazonInventory()">⟳ Sync Amazon</button>
+        <button class="btn btn-primary" onclick="openModal('modalStock')">+ Update</button>
+      </div>
+    </div>
+    <div class="channel-row">
+      <div class="channel-chip all active" onclick="filterStock('all',this)">All</div>
+      <div class="channel-chip amazon" onclick="filterStock('amazon',this)">Amazon</div>
+      <div class="channel-chip takealot" onclick="filterStock('takealot',this)">Takealot</div>
+    </div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="tbl"><thead><tr><th>Product</th><th>Amazon</th><th>Takealot</th><th>On Hand</th><th>Total</th><th>Status</th><th></th></tr></thead>
+      <tbody id="stockBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- SALES -->
+  <div class="page" id="page-sales">
+    <div class="page-header">
+      <div class="page-title">Daily <span>Sales</span></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-takealot btn-sm" onclick="syncTakealotOrders()">⟳ Pull Takealot Orders</button>
+        <button class="btn btn-amazon btn-sm" onclick="syncAmazonOrders()">⟳ Pull Amazon Orders</button>
+        <button class="btn btn-primary" onclick="openModal('modalSale')">+ Manual Entry</button>
+      </div>
+    </div>
+    <div class="stats-grid" id="salesStats"></div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="tbl"><thead><tr><th>Date</th><th>Product</th><th>Channel</th><th>Qty</th><th>Price</th><th>Revenue</th><th>COGS</th><th>Gross Profit</th><th></th></tr></thead>
+      <tbody id="salesBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- COST CALCULATOR -->
+  <div class="page" id="page-costing">
+    <div class="page-header"><div class="page-title">Cost <span>Calculator</span></div></div>
+    <div class="two-col">
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:18px;">Landed Cost Calculator</div>
+        <div class="form-row"><div><label>USD Product Cost</label><input type="number" id="calc_usd" placeholder="8.50" oninput="calcCost()"/></div></div>
+        <div class="form-row cols-2">
+          <div><label>ZAR/USD Exchange Rate</label><input type="number" id="calc_rate" placeholder="18.50" oninput="calcCost()"/></div>
+          <div><label>Import Duty %</label><input type="number" id="calc_duty" placeholder="20" oninput="calcCost()"/></div>
+        </div>
+        <div class="form-row cols-2">
+          <div><label>VAT % (on landed)</label><input type="number" id="calc_vat" value="15" oninput="calcCost()"/></div>
+          <div><label>Local Shipping / Unit (R)</label><input type="number" id="calc_shipping" placeholder="35" oninput="calcCost()"/></div>
+        </div>
+        <div class="form-row"><div><label>Selling Price (ZAR)</label><input type="number" id="calc_sell" placeholder="499" oninput="calcCost()"/></div></div>
+      </div>
+      <div class="card"><div style="font-family:var(--font-head);font-weight:700;margin-bottom:18px;">Cost Breakdown</div><div id="calcBreakdown"><div class="empty"><div class="empty-icon">🧮</div><div class="empty-text">Enter values to see breakdown</div></div></div></div>
+    </div>
+  </div>
+
+  <!-- ACCOUNTING -->
+  <div class="page" id="page-accounting">
+    <div class="page-header">
+      <div class="page-title">Accounting <span>Overview</span></div>
+      <select id="accPeriod" onchange="renderAccounting()" style="width:auto;padding:8px 14px;">
+        <option value="7">Last 7 Days</option>
+        <option value="30" selected>Last 30 Days</option>
+        <option value="90">Last 90 Days</option>
+        <option value="all">All Time</option>
+      </select>
+    </div>
+    <div class="stats-grid" id="accStats"></div>
+    <div class="two-col">
+      <div class="card"><div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Revenue by Channel</div><div id="accChannels"></div></div>
+      <div class="card"><div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Top Products by Profit</div><div id="accTopProducts"></div></div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Daily P&L</div>
+      <div style="overflow-x:auto;"><table class="tbl"><thead><tr><th>Date</th><th>Amazon</th><th>Takealot</th><th>Total Revenue</th><th>COGS</th><th>Gross Profit</th><th>Margin</th></tr></thead><tbody id="accDailyBody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- IMPORT BATCHES -->
+  <div class="page" id="page-batches">
+    <div class="page-header">
+      <div class="page-title">Import <span>Batches</span></div>
+      <button class="btn btn-primary" onclick="openModal('modalBatch')">+ New Batch</button>
+    </div>
+    <div class="notice">Each import batch locks in an exchange rate. Products linked to a batch carry that batch's USD/ZAR rate for all cost and margin calculations.</div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="tbl"><thead><tr><th>Batch</th><th>Date</th><th>Rate</th><th>Duty</th><th>Products</th><th>Est. Cost (ZAR)</th><th></th></tr></thead>
+      <tbody id="batchesBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- SYNC CENTER -->
+  <div class="page" id="page-sync">
+    <div class="page-header">
+      <div class="page-title">Sync <span>Center</span></div>
+      <button class="btn btn-primary" onclick="syncAll()">⟳ Sync Everything</button>
+    </div>
+    <div class="two-col" style="margin-bottom:20px;">
+      <!-- TAKEALOT SYNC CARD -->
+      <div class="connection-card">
+        <div class="connection-header">
+          <div class="connection-name"><span style="color:var(--takealot);">●</span> Takealot</div>
+          <span class="tag" id="takealotConnTag">...</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn btn-takealot" onclick="syncTakealotOffers()">📦 Sync Offers & Stock</button>
+          <button class="btn btn-takealot" onclick="syncTakealotOrders()">💳 Sync Orders</button>
+          <button class="btn btn-takealot" onclick="syncTakealotPrices()">💰 Sync Prices</button>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--muted2);">Last synced: <span id="takealotLastSync">Never</span></div>
+      </div>
+      <!-- AMAZON SYNC CARD -->
+      <div class="connection-card">
+        <div class="connection-header">
+          <div class="connection-name"><span style="color:var(--amazon);">●</span> Amazon</div>
+          <span class="tag" id="amazonConnTag">...</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button class="btn btn-amazon" onclick="syncAmazonInventory()">📦 Sync Inventory</button>
+          <button class="btn btn-amazon" onclick="syncAmazonOrders()">💳 Sync Orders</button>
+          <button class="btn btn-amazon" onclick="syncAmazonPricing()">💰 Sync Pricing</button>
+          <button class="btn btn-amazon" onclick="syncAmazonShipments()">🚢 Sync Shipments</button>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--muted2);">Last synced: <span id="amazonLastSync">Never</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-family:var(--font-head);font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+        Sync Log <button class="btn btn-secondary btn-sm" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="sync-log" id="syncLog"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Ready. Configure your API credentials in Settings, then sync.</span></div></div>
+    </div>
+    <!-- SHIPMENTS -->
+    <div class="card" style="margin-top:20px;">
+      <div style="font-family:var(--font-head);font-weight:700;margin-bottom:14px;">Amazon Shipments</div>
+      <div id="shipmentsPanel"><div class="empty" style="padding:24px;"><div class="empty-text">Sync Amazon shipments to see status</div></div></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="page-header"><div class="page-title">⚙️ <span>Settings</span></div></div>
+
+    <div class="notice">
+      <strong>Security notice:</strong> Your API credentials are stored only in your browser's localStorage. They are never sent anywhere except directly to your Cloudflare Worker proxy, which you control. Never share your Worker URL publicly.
+    </div>
+
+    <!-- PROXY URL -->
+    <!-- AI CONFIG -->
+    <div class="settings-section">
+      <div class="settings-title">✨ AI Configuration (Gemini)</div>
+      <div class="connection-card">
+        <p style="font-size:12px;color:var(--muted2);margin-bottom:14px;line-height:1.6;">
+          Get your free key from <strong style="color:var(--text)">aistudio.google.com → Get API Key</strong>. Free tier: 15 requests/min, 1M tokens/day — more than enough.
+        </p>
+        <div class="form-row">
+          <div><label>Gemini API Key</label><input id="cfg_gemini_key" type="password" placeholder="AIza..."/></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+          <button class="btn btn-secondary btn-sm" onclick="testGemini()">Test Gemini</button>
+          <span id="geminiTestResult" style="font-size:12px;"></span>
+        </div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <!-- PROXY URL -->
+    <div class="settings-section">
+      <div class="settings-title">🌐 Cloudflare Worker Proxy</div>
+      <div class="connection-card">
+        <div class="form-row">
+          <div><label>Worker URL</label><input id="cfg_proxy_url" placeholder="https://sparq-proxy.yourname.workers.dev" type="url"/></div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+          <button class="btn btn-secondary" onclick="testConnection()">Test Connection</button>
+          <span id="connTestResult" style="font-size:12px;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- TAKEALOT CREDS -->
+    <div class="settings-section">
+      <div class="settings-title"><span style="color:var(--takealot)">●</span> Takealot Configuration</div>
+      <div class="connection-card">
+        <p style="font-size:12px;color:var(--muted2);margin-bottom:14px;line-height:1.6;">
+          Get your API key from <strong style="color:var(--text)">seller.takealot.com → API Integrations → Seller API → Generate API Key</strong>.<br/>
+          Store it safely — Takealot will not show it again.
+        </p>
+        <div class="form-row">
+          <div><label>Takealot API Key</label><input id="cfg_takealot_key" type="password" placeholder="Enter your Takealot API key"/></div>
+        </div>
+        <div class="form-row">
+          <div><label>Merchant Warehouse ID (optional)</label><input id="cfg_takealot_warehouse" placeholder="From seller portal → Warehouse settings"/></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- AMAZON CREDS -->
+    <div class="settings-section">
+      <div class="settings-title"><span style="color:var(--amazon)">●</span> Amazon SP-API Configuration</div>
+      <div class="connection-card">
+        <p style="font-size:12px;color:var(--muted2);margin-bottom:14px;line-height:1.6;">
+          These credentials are stored in your <strong style="color:var(--text)">Cloudflare Worker as encrypted Secrets</strong> (not here). Enter them below only to update your Worker's secrets via the Cloudflare API, or set them manually in your Worker dashboard.<br/><br/>
+          Required: <strong style="color:var(--text)">Client ID, Client Secret, Refresh Token</strong> (from Seller Central → Apps & Services) + <strong style="color:var(--text)">AWS Access Key + Secret</strong> (from IAM).
+        </p>
+        <div class="form-row cols-2">
+          <div><label>LWA Client ID</label><input id="cfg_amz_client_id" type="password" placeholder="amzn1.application-oa2-client..."/></div>
+          <div><label>LWA Client Secret</label><input id="cfg_amz_client_secret" type="password" placeholder="..."/></div>
+        </div>
+        <div class="form-row">
+          <div><label>LWA Refresh Token</label><input id="cfg_amz_refresh_token" type="password" placeholder="Atzr|..."/></div>
+        </div>
+        <div class="form-row cols-2">
+          <div><label>AWS Access Key ID</label><input id="cfg_amz_aws_key" type="password" placeholder="AKIA..."/></div>
+          <div><label>AWS Secret Access Key</label><input id="cfg_amz_aws_secret" type="password" placeholder="..."/></div>
+        </div>
+        <div class="form-row cols-2">
+          <div><label>Marketplace ID</label><input id="cfg_amz_marketplace" placeholder="A21TJRUUN4KGV (ZA)" value="A21TJRUUN4KGV"/></div>
+          <div><label>Seller ID</label><input id="cfg_amz_seller_id" placeholder="Your Amazon Seller ID"/></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- SYNC SETTINGS -->
+    <div class="settings-section">
+      <div class="settings-title">🔄 Sync Preferences</div>
+      <div class="connection-card">
+        <div class="form-row cols-2">
+          <div><label>Auto-Sync Interval</label>
+            <select id="cfg_sync_interval">
+              <option value="0">Manual only</option>
+              <option value="15">Every 15 minutes</option>
+              <option value="30" selected>Every 30 minutes</option>
+              <option value="60">Every hour</option>
+            </select>
+          </div>
+          <div><label>Orders: Pull last N days</label><input type="number" id="cfg_order_days" value="7" placeholder="7"/></div>
+        </div>
+        <div class="form-row cols-2">
+          <div><label>Default VAT %</label><input type="number" id="cfg_vat" value="15" placeholder="15"/></div>
+          <div><label>Default Duty %</label><input type="number" id="cfg_duty" value="20" placeholder="20"/></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="saveSettings()">💾 Save All Settings</button>
+      <button class="btn btn-secondary" onclick="testConnection()">🔌 Test Connection</button>
+    </div>
+  </div>
+
+
+  <!-- BANK LEDGER -->
+  <div class="page" id="page-bank">
+    <div class="page-header">
+      <div class="page-title">Bank <span>Ledger</span></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary" onclick="openModal('modalAdjust')">± Adjustment</button>
+        <button class="btn btn-primary" onclick="openModal('modalOpeningBalance')">Set Opening Balance</button>
+      </div>
+    </div>
+    <div class="balance-hero" id="bankHero">
+      <div class="balance-label">Sparq Holdings — Available Balance</div>
+      <div class="balance-amount" id="bankBalanceDisplay">R 0.00</div>
+      <div class="balance-sub" id="bankBalanceSub">Set your opening balance to get started</div>
+      <div class="balance-row">
+        <div class="balance-stat"><div class="balance-stat-label">Money In (Sales)</div><div class="balance-stat-val pos" id="bankTotalIn">R 0.00</div></div>
+        <div class="balance-stat"><div class="balance-stat-label">Money Out (Purchases)</div><div class="balance-stat-val neg" id="bankTotalOut">R 0.00</div></div>
+        <div class="balance-stat"><div class="balance-stat-label">Net Movement</div><div class="balance-stat-val" id="bankNetMove">R 0.00</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+        Transaction Ledger
+        <select id="bankPeriod" onchange="renderBank()" style="width:auto;padding:6px 12px;font-size:12px;">
+          <option value="30">Last 30 Days</option>
+          <option value="90">Last 90 Days</option>
+          <option value="all" selected>All Time</option>
+        </select>
+      </div>
+      <div id="ledgerLines"></div>
+    </div>
+  </div>
+
+  <!-- PURCHASES -->
+  <div class="page" id="page-purchases">
+    <div class="page-header">
+      <div class="page-title">Stock <span>Purchases</span></div>
+      <button class="btn btn-primary" onclick="openModal('modalPurchase')">+ Add Purchase</button>
+    </div>
+    <div class="stats-grid" id="purchaseStats"></div>
+    <div class="card" style="overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr>
+          <th>Date</th><th>Supplier</th><th>Description</th><th>Batch</th>
+          <th>Currency</th><th>Amount</th><th>ZAR Amount</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody id="purchasesBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CASH FLOW -->
+  <div class="page" id="page-cashflow">
+    <div class="page-header">
+      <div class="page-title">Cash <span>Flow</span></div>
+      <select id="cfPeriod" onchange="renderCashflow()" style="width:auto;padding:8px 14px;">
+        <option value="7">Last 7 Days</option>
+        <option value="30" selected>Last 30 Days</option>
+        <option value="90">Last 90 Days</option>
+        <option value="all">All Time</option>
+      </select>
+    </div>
+    <div class="stats-grid" id="cfStats"></div>
+    <div class="two-col" style="margin-bottom:20px;">
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">💚 Money In</div>
+        <div id="cfMoneyIn"></div>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">🔴 Money Out</div>
+        <div id="cfMoneyOut"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Full P&amp;L Statement</div>
+      <div id="cfPL"></div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Daily Cash Flow</div>
+      <div style="overflow-x:auto;"><table class="tbl">
+        <thead><tr><th>Date</th><th>Sales Revenue</th><th>Stock Purchases</th><th>Net Cash</th><th>Running Balance</th></tr></thead>
+        <tbody id="cfDailyBody"></tbody>
+      </table></div>
+    </div>
+  </div>
+
+
+  <!-- ASK SPARQ -->
+  <div class="page" id="page-ai">
+    <div class="page-header">
+      <div class="page-title">✨ Ask <span>Sparq</span></div>
+      <button class="btn btn-secondary btn-sm" onclick="clearChat()">Clear Chat</button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="ai-messages" id="chatMessages">
+        <div class="ai-msg assistant">Hey Jarred 👋 I'm Sparq AI. I have full access to your sales, stock, purchases, products and financials. Ask me anything — "What's my best margin product?", "How much stock do I have of X?", "Am I profitable this month?"</div>
+      </div>
+      <div class="ai-input-row">
+        <input id="chatInput" placeholder="Ask anything about your business..." onkeydown="if(event.key==='Enter')sendChat()"/>
+        <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">Send</button>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;" id="chatSuggestions">
+      <button class="btn btn-secondary btn-sm" onclick="quickAsk('What is my best performing product by profit margin?')">Best margin product?</button>
+      <button class="btn btn-secondary btn-sm" onclick="quickAsk('Which channel is performing better, Amazon or Takealot?')">Amazon vs Takealot?</button>
+      <button class="btn btn-secondary btn-sm" onclick="quickAsk('What stock is running low and needs urgent reordering?')">Stock running low?</button>
+      <button class="btn btn-secondary btn-sm" onclick="quickAsk('What is my net profit this month and how does COGS compare to revenue?')">This month P&L?</button>
+      <button class="btn btn-secondary btn-sm" onclick="quickAsk('Are there any products where I am losing money or margins are dangerously thin?')">Margin warnings?</button>
+    </div>
+  </div>
+
+  <!-- AI INSIGHTS -->
+  <div class="page" id="page-insights">
+    <div class="page-header">
+      <div class="page-title">🧠 AI <span>Insights</span></div>
+      <button class="btn btn-primary" onclick="generateInsights()" id="insightsBtn">⟳ Generate Insights</button>
+    </div>
+    <div class="notice">Gemini analyses your full business data and surfaces what matters most — updated on demand.</div>
+    <div id="insightsContent">
+      <div class="empty"><div class="empty-icon">🧠</div><div class="empty-text">Click Generate Insights to analyse your business</div></div>
+    </div>
+  </div>
+
+  <!-- FORECAST -->
+  <div class="page" id="page-forecast">
+    <div class="page-header">
+      <div class="page-title">🔮 Sales <span>Forecast</span></div>
+      <button class="btn btn-primary" onclick="generateForecast()">Calculate Forecast</button>
+    </div>
+    <div class="stats-grid" id="forecastStats"></div>
+    <div class="two-col">
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">7-Day Revenue Forecast</div>
+        <div id="forecastChart"></div>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Stock Depletion Dates</div>
+        <div id="forecastDepletion"></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;">
+      <div style="font-family:var(--font-head);font-weight:700;margin-bottom:14px;">30-Day Projection</div>
+      <div id="forecastTable"></div>
+    </div>
+  </div>
+
+  <!-- PRICING ADVISOR -->
+  <div class="page" id="page-pricing">
+    <div class="page-header">
+      <div class="page-title">💰 Pricing <span>Advisor</span></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Configure Pricing</div>
+        <div class="form-row">
+          <div><label>Select Product</label>
+            <select id="pa_product" onchange="loadProductPricing()">
+              <option value="">— Select Product —</option>
+            </select>
+          </div>
+        </div>
+        <div id="pa_landed_info" style="margin-bottom:14px;display:none;">
+          <div class="card-sm" style="margin-bottom:10px;">
+            <div style="font-size:11px;color:var(--muted2);margin-bottom:4px;">CURRENT LANDED COST</div>
+            <div style="font-family:var(--font-head);font-size:20px;font-weight:700;color:var(--accent)" id="pa_landed_val">—</div>
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div><label>Target Margin %</label><input type="number" id="pa_margin" value="35" placeholder="35"/></div>
+          <div><label>Competitor Price (ZAR)</label><input type="number" id="pa_competitor" placeholder="Optional"/></div>
+        </div>
+        <div class="form-row cols-2">
+          <div><label>Amazon Fee % (est.)</label><input type="number" id="pa_amazon_fee" value="15" placeholder="15"/></div>
+          <div><label>Takealot Fee % (est.)</label><input type="number" id="pa_takealot_fee" value="10" placeholder="10"/></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:4px;" onclick="calcPricing()">Calculate Optimal Prices</button>
+        <div style="margin-top:12px;">
+          <button class="btn btn-secondary" style="width:100%;" onclick="aiPricingAdvice()" id="aiPriceBtn">✨ Get AI Pricing Advice</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Recommended Prices</div>
+        <div id="pricingResult"><div class="empty"><div class="empty-icon">💰</div><div class="empty-text">Select a product to see pricing recommendations</div></div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px;display:none;" id="aiPriceCard">
+      <div style="font-family:var(--font-head);font-weight:700;margin-bottom:14px;">✨ AI Pricing Analysis</div>
+      <div id="aiPriceResult"></div>
+    </div>
+  </div>
+
+  <!-- REORDER -->
+  <div class="page" id="page-reorder">
+    <div class="page-header">
+      <div class="page-title">📦 Reorder <span>Recommendations</span></div>
+      <button class="btn btn-primary" onclick="generateReorder()">⟳ Analyse Stock</button>
+    </div>
+    <div class="stats-grid" id="reorderStats"></div>
+    <div id="reorderContent">
+      <div class="empty"><div class="empty-icon">📦</div><div class="empty-text">Click Analyse Stock to generate reorder recommendations</div></div>
+    </div>
+  </div>
+
+  <!-- INVOICE READER -->
+  <div class="page" id="page-invoice">
+    <div class="page-header">
+      <div class="page-title">🧾 Invoice <span>Reader</span></div>
+    </div>
+    <div class="notice">Take a photo of a supplier invoice or upload a PDF/image. Gemini Vision will extract all the details and pre-fill a purchase entry for you.</div>
+    <div class="two-col">
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Upload Invoice</div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('invoiceFile').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="handleInvoiceDrop(event)">
+          <input type="file" id="invoiceFile" accept="image/*,.pdf" onchange="handleInvoiceFile(event)"/>
+          <div class="upload-icon">📄</div>
+          <div class="upload-text"><strong>Click to upload</strong> or drag & drop<br/>JPG, PNG, PDF supported</div>
+        </div>
+        <div id="invoicePreview" style="display:none;margin-bottom:14px;">
+          <img id="invoiceImg" style="width:100%;border-radius:8px;border:1px solid var(--border);max-height:300px;object-fit:contain;" />
+        </div>
+        <button class="btn btn-primary" style="width:100%;" onclick="readInvoice()" id="readInvoiceBtn" disabled>✨ Extract with Gemini</button>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:16px;">Extracted Details</div>
+        <div id="invoiceExtracted">
+          <div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Upload an invoice to extract details</div></div>
+        </div>
+        <div id="invoiceSaveBtn" style="display:none;margin-top:14px;">
+          <button class="btn btn-primary" style="width:100%;" onclick="saveExtractedInvoice()">💾 Save as Purchase</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- MODALS (same as before + updated) -->
+<div class="overlay" id="modalProduct">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Product</div><button class="modal-close" onclick="closeModal('modalProduct')">✕</button></div>
+    <div class="form-row cols-2"><div><label>Product Name</label><input id="p_name"/></div><div><label>SKU</label><input id="p_sku"/></div></div>
+    <div class="form-row cols-2"><div><label>USD Cost</label><input type="number" id="p_usd"/></div><div><label>Import Batch</label><select id="p_batch"></select></div></div>
+    <div class="form-row cols-2"><div><label>Amazon Price (ZAR)</label><input type="number" id="p_amazon_price"/></div><div><label>Takealot Price (ZAR)</label><input type="number" id="p_takealot_price"/></div></div>
+    <div class="form-row cols-2"><div><label>Import Duty %</label><input type="number" id="p_duty"/></div><div><label>Local Shipping/Unit (ZAR)</label><input type="number" id="p_shipping"/></div></div>
+    <div class="form-row cols-2">
+      <div><label>Amazon SKU (for API sync)</label><input id="p_amazon_sku" placeholder="Matches your Amazon listing SKU"/></div>
+      <div><label>Takealot Offer ID (for API sync)</label><input id="p_takealot_offer_id" placeholder="From Takealot portal"/></div>
+    </div>
+    <div class="form-row"><div><label>Channels</label>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <label style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="p_ch_amazon" style="width:auto;"/> Amazon</label>
+        <label style="text-transform:none;letter-spacing:0;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="p_ch_takealot" style="width:auto;"/> Takealot</label>
+      </div>
+    </div></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-secondary" onclick="closeModal('modalProduct')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modalStock">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Update Stock</div><button class="modal-close" onclick="closeModal('modalStock')">✕</button></div>
+    <div class="form-row"><div><label>Product</label><select id="s_product"></select></div></div>
+    <div class="form-row cols-3">
+      <div><label>Amazon Stock</label><input type="number" id="s_amazon" value="0"/></div>
+      <div><label>Takealot Stock</label><input type="number" id="s_takealot" value="0"/></div>
+      <div><label>On Hand</label><input type="number" id="s_onhand" value="0"/></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-secondary" onclick="closeModal('modalStock')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStock()">Update Stock</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modalSale">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Log Sale</div><button class="modal-close" onclick="closeModal('modalSale')">✕</button></div>
+    <div class="form-row cols-2">
+      <div><label>Date</label><input type="date" id="sl_date"/></div>
+      <div><label>Channel</label><select id="sl_channel"><option value="amazon">Amazon</option><option value="takealot">Takealot</option></select></div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Product</label><select id="sl_product" onchange="fillSalePrice()"></select></div>
+      <div><label>Quantity</label><input type="number" id="sl_qty" value="1" min="1" oninput="calcSaleTotal()"/></div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Sale Price / Unit (ZAR)</label><input type="number" id="sl_price" oninput="calcSaleTotal()"/></div>
+      <div><label>Total Revenue</label><input type="number" id="sl_total" readonly style="opacity:.6;"/></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-secondary" onclick="closeModal('modalSale')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSale()">Log Sale</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="modalBatch">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">New Import Batch</div><button class="modal-close" onclick="closeModal('modalBatch')">✕</button></div>
+    <div class="form-row cols-2"><div><label>Batch Name</label><input id="b_name" placeholder="Canton Fair Apr 2026"/></div><div><label>Date</label><input type="date" id="b_date"/></div></div>
+    <div class="form-row cols-2"><div><label>USD/ZAR Rate</label><input type="number" id="b_rate" placeholder="18.50"/></div><div><label>Default Duty %</label><input type="number" id="b_duty" placeholder="20"/></div></div>
+    <div class="form-row"><div><label>Notes</label><input id="b_notes"/></div></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-secondary" onclick="closeModal('modalBatch')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBatch()">Save Batch</button>
+    </div>
+  </div>
+</div>
+
+<!-- Opening Balance Modal -->
+<div class="overlay" id="modalOpeningBalance">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Set Opening Balance</div><button class="modal-close" onclick="closeModal('modalOpeningBalance')">✕</button></div>
+    <p style="font-size:12px;color:var(--muted2);margin-bottom:18px;line-height:1.6;">This is your Sparq Holdings account balance as of a specific date. All subsequent sales and purchases will adjust from this point.</p>
+    <div class="form-row cols-2">
+      <div><label>Opening Balance (ZAR)</label><input type="number" id="ob_amount" placeholder="e.g. 25000"/></div>
+      <div><label>As of Date</label><input type="date" id="ob_date"/></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-secondary" onclick="closeModal('modalOpeningBalance')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveOpeningBalance()">Save Balance</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Purchase Modal -->
+<div class="overlay" id="modalPurchase">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Add Stock Purchase</div><button class="modal-close" onclick="closeModal('modalPurchase')">✕</button></div>
+    <div class="form-row cols-2">
+      <div><label>Date</label><input type="date" id="pu_date"/></div>
+      <div><label>Supplier Name</label><input id="pu_supplier" placeholder="e.g. Guangzhou Electronics Co."/></div>
+    </div>
+    <div class="form-row">
+      <div><label>Description / Invoice Ref</label><input id="pu_desc" placeholder="e.g. 50x USB-C Chargers — INV-2026-041"/></div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Import Batch (optional)</label><select id="pu_batch"><option value="">— No Batch —</option></select></div>
+      <div><label>Currency</label>
+        <select id="pu_currency" onchange="togglePurchaseCurrency()">
+          <option value="ZAR">ZAR (South African Rand)</option>
+          <option value="USD">USD (US Dollar)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Amount</label><input type="number" id="pu_amount" placeholder="0.00" oninput="calcPurchaseZAR()"/></div>
+      <div id="pu_rate_wrap" style="display:none;"><label>Exchange Rate (ZAR/USD)</label><input type="number" id="pu_rate" placeholder="18.75" oninput="calcPurchaseZAR()"/></div>
+    </div>
+    <div class="form-row">
+      <div><label>ZAR Amount</label><input type="number" id="pu_zar" placeholder="Auto-calculated" style="opacity:.7;"/></div>
+    </div>
+    <div class="form-row">
+      <div><label>Status</label>
+        <select id="pu_status">
+          <option value="paid">Paid</option>
+          <option value="pending">Pending / Not yet paid</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-secondary" onclick="closeModal('modalPurchase')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePurchase()">Save Purchase</button>
+    </div>
+  </div>
+</div>
+
+<!-- Balance Adjustment Modal -->
+<div class="overlay" id="modalAdjust">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Balance Adjustment</div><button class="modal-close" onclick="closeModal('modalAdjust')">✕</button></div>
+    <p style="font-size:12px;color:var(--muted2);margin-bottom:18px;">Use this to reconcile your balance — e.g. bank charges, transfers in, cash deposits.</p>
+    <div class="form-row cols-2">
+      <div><label>Date</label><input type="date" id="adj_date"/></div>
+      <div><label>Type</label>
+        <select id="adj_type">
+          <option value="credit">Credit (money in)</option>
+          <option value="debit">Debit (money out)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Amount (ZAR)</label><input type="number" id="adj_amount" placeholder="0.00"/></div>
+      <div><label>Description</label><input id="adj_desc" placeholder="e.g. Bank charge, Transfer in"/></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px;">
+      <button class="btn btn-secondary" onclick="closeModal('modalAdjust')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAdjustment()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA STORE
+// ═══════════════════════════════════════════════════════════
+const DB = {
+  get: k => { try { return JSON.parse(localStorage.getItem('sparq_'+k)||'null'); } catch { return null; }},
+  set: (k,v) => localStorage.setItem('sparq_'+k, JSON.stringify(v)),
+  products: () => DB.get('products') || [],
+  sales: () => DB.get('sales') || [],
+  stock: () => DB.get('stock') || {},
+  batches: () => DB.get('batches') || [],
+  config: () => DB.get('config') || {},
+  syncMeta: () => DB.get('syncMeta') || {},
+  purchases: () => DB.get('purchases') || [],
+  adjustments: () => DB.get('adjustments') || [],
+  bankMeta: () => DB.get('bankMeta') || { openingBalance: 0, openingDate: null },
+  saveProducts: v => DB.set('products',v),
+  saveSales: v => DB.set('sales',v),
+  saveStock: v => DB.set('stock',v),
+  saveBatches: v => DB.set('batches',v),
+  saveConfig: v => DB.set('config',v),
+  saveSyncMeta: v => DB.set('syncMeta',v),
+  savePurchases: v => DB.set('purchases',v),
+  saveAdjustments: v => DB.set('adjustments',v),
+  saveBankMeta: v => DB.set('bankMeta',v),
+};
+
+// ═══════════════════════════════════════════════════════════
+// SYNC ENGINE
+// ═══════════════════════════════════════════════════════════
+let syncLog = [];
+
+function log(msg, type='info') {
+  const now = new Date().toLocaleTimeString('en-ZA',{hour12:false});
+  syncLog.unshift({ time: now, msg, type });
+  if(syncLog.length > 100) syncLog.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('syncLog');
+  if(!el) return;
+  el.innerHTML = syncLog.map(l => `<div class="log-line"><span class="log-time">${l.time}</span><span class="log-${l.type}">${l.msg}</span></div>`).join('') || '<div class="log-line"><span class="log-info">No log entries</span></div>';
+}
+
+function clearLog() { syncLog = []; renderLog(); }
+
+function setSyncStatus(state, text) {
+  const badge = document.getElementById('syncStatusBadge');
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncStatusText');
+  badge.className = 'sync-status ' + state;
+  dot.className = 'sync-dot' + (state==='syncing'?' pulse':'');
+  label.textContent = text;
+}
+
+function getProxyUrl() {
+  return DB.config().proxyUrl || '';
+}
+
+async function proxyFetch(path, options = {}) {
+  const base = getProxyUrl();
+  if(!base) throw new Error('No proxy URL configured. Go to Settings and add your Cloudflare Worker URL.');
+  const url = base.replace(/\/$/, '') + path;
+  const res = await fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers||{}) }});
+  const data = await res.json();
+  return { status: res.status, data };
+}
+
+// ─── TAKEALOT SYNC FUNCTIONS ──────────────────────────────────────────────────
+
+async function syncTakealotOffers() {
+  log('Syncing Takealot offers & stock...', 'info');
+  setSyncStatus('syncing', 'Syncing Takealot...');
+  try {
+    const { status, data } = await proxyFetch('/takealot/offers');
+    if(!data.success) throw new Error(data.error || 'Takealot offers sync failed');
+    const prods = DB.products();
+    const stock = DB.stock();
+    let updated = 0;
+    (data.offers || []).forEach(offer => {
+      const prod = prods.find(p => p.sku === offer.sku || p.takealotOfferId === offer.offerId);
+      if(prod) {
+        if(!stock[prod.id]) stock[prod.id] = {amazon:0, takealot:0, onhand:0};
+        stock[prod.id].takealot = offer.stockAtTakealot;
+        if(offer.sellingPrice) prod.takealotPrice = offer.sellingPrice;
+        updated++;
+      }
+    });
+    DB.saveStock(stock);
+    DB.saveProducts(prods);
+    updateSyncMeta('takealot');
+    log(`✓ Takealot: synced ${data.offers?.length || 0} offers, updated ${updated} products`, 'ok');
+    setSyncStatus('ok', 'Synced');
+    renderStock(); renderDashboard();
+  } catch(e) {
+    log('✗ Takealot offers error: ' + e.message, 'err');
+    setSyncStatus('err', 'Sync error');
+  }
+}
+
+async function syncTakealotOrders() {
+  log('Pulling Takealot orders...', 'info');
+  setSyncStatus('syncing', 'Fetching orders...');
+  const days = DB.config().orderDays || 7;
+  const dateFrom = new Date(Date.now() - days * 86400000).toISOString().split('T')[0];
+  try {
+    const { data } = await proxyFetch(`/takealot/orders?date_from=${dateFrom}`);
+    if(!data.success) throw new Error(data.error || 'Orders sync failed');
+    const prods = DB.products();
+    const batches = DB.batches();
+    const existingSales = DB.sales();
+    const existingIds = new Set(existingSales.map(s => s.apiOrderId).filter(Boolean));
+    let added = 0;
+    (data.orders || []).forEach(order => {
+      if(existingIds.has(order.orderId)) return;
+      (order.items || []).forEach(item => {
+        const prod = prods.find(p => p.sku === item.sku);
+        const lc = prod ? landedCost(prod, batches).total : 0;
+        existingSales.push({
+          id: 'tak_' + order.orderId + '_' + item.sku,
+          apiOrderId: order.orderId,
+          date: order.orderDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+          pid: prod?.id || null,
+          productName: item.title || item.sku,
+          sku: item.sku,
+          channel: 'takealot',
+          qty: item.qty,
+          price: item.price,
+          revenue: item.total,
+          cogs: lc * item.qty,
+          grossProfit: item.total - (lc * item.qty),
+          source: 'api',
+        });
+        added++;
+      });
+    });
+    DB.saveSales(existingSales);
+    log(`✓ Takealot: imported ${added} new order lines`, 'ok');
+    setSyncStatus('ok', 'Synced');
+    renderSales(); renderDashboard();
+  } catch(e) {
+    log('✗ Takealot orders error: ' + e.message, 'err');
+    setSyncStatus('err', 'Sync error');
+  }
+}
+
+async function syncTakealotPrices() {
+  log('Checking Takealot prices...', 'info');
+  try {
+    const { data } = await proxyFetch('/takealot/offers');
+    if(!data.success) throw new Error(data.error);
+    const prods = DB.products();
+    let count = 0;
+    (data.offers||[]).forEach(o => {
+      const prod = prods.find(p => p.sku === o.sku || p.takealotOfferId === o.offerId);
+      if(prod && o.sellingPrice) { prod.takealotPrice = o.sellingPrice; count++; }
+    });
+    DB.saveProducts(prods);
+    log(`✓ Takealot prices updated for ${count} products`, 'ok');
+    renderProducts();
+  } catch(e) {
+    log('✗ Takealot price sync error: ' + e.message, 'err');
+  }
+}
+
+// PUSH: update stock on Takealot
+async function pushStockToTakealot(offerId, quantity) {
+  log(`Pushing stock ${quantity} to Takealot offer ${offerId}...`, 'info');
+  try {
+    const { data } = await proxyFetch('/takealot/update-stock', {
+      method: 'PATCH',
+      body: JSON.stringify({ offerId, quantity }),
+    });
+    if(data.success) log(`✓ Takealot stock updated: ${offerId} → ${quantity}`, 'ok');
+    else log(`✗ Takealot stock push failed: ${JSON.stringify(data.error)}`, 'err');
+  } catch(e) {
+    log('✗ Takealot push error: ' + e.message, 'err');
+  }
+}
+
+// ─── AMAZON SYNC FUNCTIONS ────────────────────────────────────────────────────
+
+async function syncAmazonInventory() {
+  log('Syncing Amazon FBA inventory...', 'info');
+  setSyncStatus('syncing', 'Syncing Amazon...');
+  try {
+    const { data } = await proxyFetch('/amazon/inventory');
+    if(!data.success) throw new Error(data.error || 'Amazon inventory failed');
+    const prods = DB.products();
+    const stock = DB.stock();
+    let updated = 0;
+    (data.inventory || []).forEach(inv => {
+      const prod = prods.find(p => p.sku === inv.sku || p.amazonSku === inv.sku);
+      if(prod) {
+        if(!stock[prod.id]) stock[prod.id] = {amazon:0, takealot:0, onhand:0};
+        stock[prod.id].amazon = inv.fulfillableQuantity || inv.totalQuantity || 0;
+        updated++;
+      }
+    });
+    DB.saveStock(stock);
+    updateSyncMeta('amazon');
+    log(`✓ Amazon: synced ${data.inventory?.length || 0} SKUs, updated ${updated} products`, 'ok');
+    setSyncStatus('ok', 'Synced');
+    renderStock(); renderDashboard();
+  } catch(e) {
+    log('✗ Amazon inventory error: ' + e.message, 'err');
+    setSyncStatus('err', 'Sync error');
+  }
+}
+
+async function syncAmazonOrders() {
+  log('Pulling Amazon orders...', 'info');
+  setSyncStatus('syncing', 'Fetching orders...');
+  const days = DB.config().orderDays || 7;
+  const createdAfter = new Date(Date.now() - days * 86400000).toISOString();
+  try {
+    const { data } = await proxyFetch(`/amazon/orders?created_after=${encodeURIComponent(createdAfter)}`);
+    if(!data.success) throw new Error(data.error || 'Amazon orders failed');
+    const prods = DB.products();
+    const batches = DB.batches();
+    const existingSales = DB.sales();
+    const existingIds = new Set(existingSales.map(s => s.apiOrderId).filter(Boolean));
+    let added = 0;
+
+    for(const order of (data.orders || [])) {
+      if(existingIds.has(order.orderId)) continue;
+      // Fetch order items
+      try {
+        const { data: itemData } = await proxyFetch(`/amazon/order-items?order_id=${order.orderId}`);
+        (itemData.items || []).forEach(item => {
+          const prod = prods.find(p => p.sku === item.sku || p.amazonSku === item.sku);
+          const lc = prod ? landedCost(prod, batches).total : 0;
+          existingSales.push({
+            id: 'amz_' + order.orderId + '_' + item.sku,
+            apiOrderId: order.orderId,
+            date: order.orderDate?.split('T')[0] || new Date().toISOString().split('T')[0],
+            pid: prod?.id || null,
+            productName: item.title || item.sku,
+            sku: item.sku,
+            channel: 'amazon',
+            qty: item.qty,
+            price: item.price,
+            revenue: item.qty * item.price,
+            cogs: lc * item.qty,
+            grossProfit: (item.qty * item.price) - (lc * item.qty),
+            source: 'api',
+          });
+          added++;
+        });
+      } catch(e) {
+        log(`⚠ Could not fetch items for order ${order.orderId}`, 'err');
+      }
+    }
+    DB.saveSales(existingSales);
+    log(`✓ Amazon: imported ${added} new order lines from ${data.orders?.length} orders`, 'ok');
+    setSyncStatus('ok', 'Synced');
+    renderSales(); renderDashboard();
+  } catch(e) {
+    log('✗ Amazon orders error: ' + e.message, 'err');
+    setSyncStatus('err', 'Sync error');
+  }
+}
+
+async function syncAmazonPricing() {
+  log('Syncing Amazon pricing...', 'info');
+  const prods = DB.products().filter(p => p.channels?.amazon && (p.sku || p.amazonSku));
+  if(!prods.length) { log('No Amazon products with SKUs to price check', 'info'); return; }
+  const skus = prods.map(p => p.amazonSku || p.sku).slice(0, 20).join(',');
+  try {
+    const { data } = await proxyFetch(`/amazon/pricing?skus=${encodeURIComponent(skus)}`);
+    if(!data.success) throw new Error(data.error);
+    const allProds = DB.products();
+    let count = 0;
+    (data.prices||[]).forEach(p => {
+      const prod = allProds.find(x => x.sku===p.sku || x.amazonSku===p.sku);
+      if(prod && p.listingPrice) { prod.amazonPrice = p.listingPrice; count++; }
+    });
+    DB.saveProducts(allProds);
+    log(`✓ Amazon prices updated for ${count} products`, 'ok');
+    renderProducts();
+  } catch(e) {
+    log('✗ Amazon pricing error: ' + e.message, 'err');
+  }
+}
+
+async function syncAmazonShipments() {
+  log('Checking Amazon shipments...', 'info');
+  try {
+    const { data } = await proxyFetch('/amazon/shipments');
+    if(!data.success) throw new Error(data.error);
+    const panel = document.getElementById('shipmentsPanel');
+    if(panel) {
+      panel.innerHTML = (data.shipments||[]).length ? `
+        <table class="tbl"><thead><tr><th>Shipment ID</th><th>Name</th><th>Status</th><th>FC</th></tr></thead><tbody>
+        ${(data.shipments||[]).map(s=>`<tr>
+          <td class="mono">${s.shipmentId}</td>
+          <td>${s.name||'—'}</td>
+          <td><span class="tag ${s.status==='RECEIVING'?'tag-instock':s.status==='IN_TRANSIT'?'tag-warn':'tag-ok'}">${s.status}</span></td>
+          <td class="mono">${s.destination||'—'}</td>
+        </tr>`).join('')}
+        </tbody></table>` : '<div class="empty" style="padding:20px;"><div class="empty-text">No active shipments found</div></div>';
+    }
+    log(`✓ Amazon: ${data.shipments?.length || 0} shipments loaded`, 'ok');
+  } catch(e) {
+    log('✗ Amazon shipments error: ' + e.message, 'err');
+  }
+}
+
+async function syncAll() {
+  setSyncStatus('syncing', 'Syncing...');
+  document.getElementById('syncBtn').disabled = true;
+  log('=== Starting full sync ===', 'info');
+  try {
+    await syncTakealotOffers();
+    await syncTakealotOrders();
+    await syncAmazonInventory();
+    await syncAmazonOrders();
+    await syncAmazonShipments();
+    log('=== Sync complete ===', 'ok');
+    setSyncStatus('ok', 'All synced');
+  } catch(e) {
+    log('Sync error: ' + e.message, 'err');
+    setSyncStatus('err', 'Sync failed');
+  }
+  document.getElementById('syncBtn').disabled = false;
+}
+
+function updateSyncMeta(channel) {
+  const meta = DB.syncMeta();
+  meta[channel] = new Date().toLocaleString('en-ZA');
+  DB.saveSyncMeta(meta);
+  const el = document.getElementById(channel+'LastSync');
+  if(el) el.textContent = meta[channel];
+}
+
+// ─── CONNECTION TEST ──────────────────────────────────────────────────────────
+async function testConnection() {
+  const url = getProxyUrl();
+  const result = document.getElementById('connTestResult');
+  if(!url) { if(result) result.innerHTML = '<span style="color:var(--red)">⚠ No proxy URL set</span>'; return; }
+  if(result) result.innerHTML = '<span style="color:var(--accent)">Testing...</span>';
+  try {
+    const res = await fetch(url.replace(/\/$/, '') + '/health', { signal: AbortSignal.timeout(5000) });
+    const data = await res.json();
+    if(data.status === 'ok') {
+      if(result) result.innerHTML = '<span style="color:var(--green)">✓ Connected to worker</span>';
+      document.getElementById('takealotConnTag').className = 'tag tag-ok';
+      document.getElementById('takealotConnTag').textContent = 'Connected';
+      document.getElementById('amazonConnTag').className = 'tag tag-ok';
+      document.getElementById('amazonConnTag').textContent = 'Connected';
+      log('✓ Proxy connection successful', 'ok');
+    } else {
+      if(result) result.innerHTML = '<span style="color:var(--red)">✗ Unexpected response</span>';
+    }
+  } catch(e) {
+    if(result) result.innerHTML = `<span style="color:var(--red)">✗ ${e.message}</span>`;
+    document.getElementById('takealotConnTag').className = 'tag tag-err';
+    document.getElementById('takealotConnTag').textContent = 'Not connected';
+    document.getElementById('amazonConnTag').className = 'tag tag-err';
+    document.getElementById('amazonConnTag').textContent = 'Not connected';
+    log('✗ Proxy connection failed: ' + e.message, 'err');
+  }
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+function saveSettings() {
+  const cfg = {
+    proxyUrl: document.getElementById('cfg_proxy_url').value.trim(),
+    geminiKey: document.getElementById('cfg_gemini_key').value.trim(),
+    takealotKey: document.getElementById('cfg_takealot_key').value,
+    takealotWarehouse: document.getElementById('cfg_takealot_warehouse').value,
+    amzClientId: document.getElementById('cfg_amz_client_id').value,
+    amzClientSecret: document.getElementById('cfg_amz_client_secret').value,
+    amzRefreshToken: document.getElementById('cfg_amz_refresh_token').value,
+    amzAwsKey: document.getElementById('cfg_amz_aws_key').value,
+    amzAwsSecret: document.getElementById('cfg_amz_aws_secret').value,
+    amzMarketplace: document.getElementById('cfg_amz_marketplace').value,
+    amzSellerId: document.getElementById('cfg_amz_seller_id').value,
+    syncInterval: document.getElementById('cfg_sync_interval').value,
+    orderDays: document.getElementById('cfg_order_days').value,
+    vat: document.getElementById('cfg_vat').value,
+    duty: document.getElementById('cfg_duty').value,
+  };
+  DB.saveConfig(cfg);
+  setupAutoSync();
+  alert('Settings saved!');
+  log('Settings updated', 'info');
+}
+
+function loadSettings() {
+  const cfg = DB.config();
+  const fields = {
+    cfg_proxy_url: cfg.proxyUrl, cfg_gemini_key: cfg.geminiKey, cfg_takealot_key: cfg.takealotKey,
+    cfg_takealot_warehouse: cfg.takealotWarehouse, cfg_amz_client_id: cfg.amzClientId,
+    cfg_amz_client_secret: cfg.amzClientSecret, cfg_amz_refresh_token: cfg.amzRefreshToken,
+    cfg_amz_aws_key: cfg.amzAwsKey, cfg_amz_aws_secret: cfg.amzAwsSecret,
+    cfg_amz_marketplace: cfg.amzMarketplace || 'A21TJRUUN4KGV',
+    cfg_amz_seller_id: cfg.amzSellerId, cfg_sync_interval: cfg.syncInterval || '30',
+    cfg_order_days: cfg.orderDays || '7', cfg_vat: cfg.vat || '15', cfg_duty: cfg.duty || '20',
+  };
+  Object.entries(fields).forEach(([id, val]) => { const el = document.getElementById(id); if(el && val) el.value = val; });
+  const meta = DB.syncMeta();
+  ['takealot','amazon'].forEach(ch => { const el = document.getElementById(ch+'LastSync'); if(el && meta[ch]) el.textContent = meta[ch]; });
+  if(cfg.proxyUrl) {
+    ['takealotConnTag','amazonConnTag'].forEach(id => {
+      const el = document.getElementById(id); if(el) { el.className='tag tag-warn'; el.textContent='Not tested'; }
+    });
+  } else {
+    ['takealotConnTag','amazonConnTag'].forEach(id => {
+      const el = document.getElementById(id); if(el) { el.className='tag tag-err'; el.textContent='Not configured'; }
+    });
+  }
+}
+
+let autoSyncTimer = null;
+function setupAutoSync() {
+  if(autoSyncTimer) clearInterval(autoSyncTimer);
+  const mins = parseInt(DB.config().syncInterval || 0);
+  if(mins > 0) {
+    autoSyncTimer = setInterval(syncAll, mins * 60 * 1000);
+    log(`Auto-sync scheduled every ${mins} minutes`, 'info');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>{ if(n.getAttribute('onclick')?.includes("'"+page+"'")) n.classList.add('active'); });
+  const renders = {dashboard:renderDashboard,products:renderProducts,stock:renderStock,sales:renderSales,accounting:renderAccounting,batches:renderBatches,sync:()=>{renderLog();},settings:loadSettings,bank:renderBank,purchases:renderPurchases,cashflow:renderCashflow,ai:initChat,insights:()=>{},forecast:generateForecast,pricing:initPricing,reorder:generateReorder,invoice:()=>{}};
+  if(renders[page]) renders[page]();
+}
+
+// ═══════════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  if(id==='modalProduct') populateBatchSelect();
+  if(id==='modalStock'||id==='modalSale') populateProductSelect();
+  if(id==='modalSale') document.getElementById('sl_date').value = today();
+  if(id==='modalBatch') document.getElementById('b_date').value = today();
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+const today = () => new Date().toISOString().split('T')[0];
+
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+const R = v => 'R '+Number(v||0).toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct = v => Number(v||0).toFixed(1)+'%';
+
+function landedCost(product, batches) {
+  let rate = 18, duty = Number(product.duty || DB.config().duty || 20);
+  if(product.batchId) { const b = batches.find(x=>x.id===product.batchId); if(b) { rate=Number(b.rate); if(!product.duty) duty=Number(b.duty||0); }}
+  const zarCost = Number(product.usd||0) * rate;
+  const dutyAmt = zarCost * (duty/100);
+  const landed = zarCost + dutyAmt;
+  const vat = landed * (Number(DB.config().vat||15)/100);
+  const shipping = Number(product.shipping||0);
+  return { zarCost, dutyAmt, landed, vat, shipping, total: landed+vat+shipping, rate, duty };
+}
+
+function populateBatchSelect() {
+  const sel = document.getElementById('p_batch');
+  sel.innerHTML = '<option value="">— No Batch —</option>';
+  DB.batches().forEach(b=>{ const o=document.createElement('option'); o.value=b.id; o.textContent=b.name+' ('+b.rate+')'; sel.appendChild(o); });
+}
+
+function populateProductSelect() {
+  DB.products().forEach(p => {
+    ['s_product','sl_product'].forEach(id => {
+      const sel = document.getElementById(id); if(!sel) return;
+      if(id==='s_product' && !document.getElementById('modalStock').classList.contains('open')) return;
+      if(id==='sl_product' && !document.getElementById('modalSale').classList.contains('open')) return;
+      if(!sel.querySelector(`option[value="${p.id}"]`)) {
+        const o = document.createElement('option'); o.value=p.id; o.textContent=p.name+' ('+p.sku+')'; sel.appendChild(o);
+      }
+    });
+  });
+}
+
+function resetProductSelects() {
+  ['s_product','sl_product'].forEach(id => {
+    const sel = document.getElementById(id); if(!sel) return;
+    sel.innerHTML = '<option value="">— Select Product —</option>';
+    DB.products().forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.name+' ('+p.sku+')'; sel.appendChild(o); });
+  });
+}
+
+// Override openModal to reset selects
+const _origOpen = openModal;
+window.openModal = function(id) {
+  if(id==='modalStock'||id==='modalSale') resetProductSelects();
+  if(id==='modalPurchase') { populatePurchaseBatch(); document.getElementById('pu_date').value=today(); document.getElementById('pu_rate_wrap').style.display='none'; }
+  if(id==='modalOpeningBalance') document.getElementById('ob_date').value=today();
+  if(id==='modalAdjust') document.getElementById('adj_date').value=today();
+  _origOpen(id);
+};
+
+function fillSalePrice() {
+  const pid = document.getElementById('sl_product').value;
+  const ch = document.getElementById('sl_channel').value;
+  const prod = DB.products().find(p=>p.id===pid);
+  if(prod) { document.getElementById('sl_price').value = ch==='amazon'?(prod.amazonPrice||''):(prod.takealotPrice||''); calcSaleTotal(); }
+}
+document.getElementById('sl_channel')?.addEventListener('change', fillSalePrice);
+
+function calcSaleTotal() {
+  const qty = Number(document.getElementById('sl_qty').value||0);
+  const price = Number(document.getElementById('sl_price').value||0);
+  document.getElementById('sl_total').value = (qty*price).toFixed(2);
+}
+
+// ═══════════════════════════════════════════════════════════
+// SAVE FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+function saveProduct() {
+  const name=document.getElementById('p_name').value.trim();
+  const sku=document.getElementById('p_sku').value.trim();
+  if(!name||!sku) return alert('Name and SKU required');
+  const prods = DB.products();
+  prods.push({
+    id: Date.now().toString(), name, sku,
+    usd: document.getElementById('p_usd').value,
+    batchId: document.getElementById('p_batch').value,
+    amazonPrice: document.getElementById('p_amazon_price').value,
+    takealotPrice: document.getElementById('p_takealot_price').value,
+    duty: document.getElementById('p_duty').value,
+    shipping: document.getElementById('p_shipping').value,
+    amazonSku: document.getElementById('p_amazon_sku').value,
+    takealotOfferId: document.getElementById('p_takealot_offer_id').value,
+    channels: { amazon: document.getElementById('p_ch_amazon').checked, takealot: document.getElementById('p_ch_takealot').checked }
+  });
+  DB.saveProducts(prods);
+  closeModal('modalProduct');
+  renderProducts();
+  document.querySelectorAll('#modalProduct input').forEach(i=>i.value='');
+  document.getElementById('p_ch_amazon').checked=false;
+  document.getElementById('p_ch_takealot').checked=false;
+}
+
+function saveStock() {
+  const pid = document.getElementById('s_product').value;
+  if(!pid) return alert('Select a product');
+  const stock = DB.stock();
+  stock[pid] = {
+    amazon: Number(document.getElementById('s_amazon').value||0),
+    takealot: Number(document.getElementById('s_takealot').value||0),
+    onhand: Number(document.getElementById('s_onhand').value||0),
+  };
+  DB.saveStock(stock);
+  closeModal('modalStock');
+  renderStock();
+}
+
+function saveSale() {
+  const pid = document.getElementById('sl_product').value;
+  if(!pid) return alert('Select a product');
+  const qty = Number(document.getElementById('sl_qty').value||0);
+  const price = Number(document.getElementById('sl_price').value||0);
+  if(!qty||!price) return alert('Enter qty and price');
+  const prod = DB.products().find(p=>p.id===pid);
+  const lc = landedCost(prod, DB.batches());
+  const channel = document.getElementById('sl_channel').value;
+  const sales = DB.sales();
+  sales.push({
+    id: Date.now().toString(), date: document.getElementById('sl_date').value,
+    pid, productName: prod.name, sku: prod.sku, channel, qty, price,
+    revenue: qty*price, cogs: lc.total*qty, grossProfit: (qty*price)-(lc.total*qty),
+  });
+  DB.saveSales(sales);
+  const stock = DB.stock();
+  if(stock[pid]) {
+    if(channel==='amazon'&&stock[pid].amazon>=qty) stock[pid].amazon-=qty;
+    else if(channel==='takealot'&&stock[pid].takealot>=qty) stock[pid].takealot-=qty;
+    DB.saveStock(stock);
+  }
+  closeModal('modalSale');
+  renderSales();
+}
+
+function saveBatch() {
+  const name = document.getElementById('b_name').value.trim();
+  const rate = document.getElementById('b_rate').value;
+  if(!name||!rate) return alert('Name and rate required');
+  const batches = DB.batches();
+  batches.push({ id: Date.now().toString(), name, date: document.getElementById('b_date').value, rate, duty: document.getElementById('b_duty').value, notes: document.getElementById('b_notes').value });
+  DB.saveBatches(batches);
+  closeModal('modalBatch');
+  renderBatches();
+}
+
+function deleteProduct(id) { if(!confirm('Delete product?')) return; DB.saveProducts(DB.products().filter(p=>p.id!==id)); renderProducts(); }
+function deleteSale(id) { if(!confirm('Delete this entry?')) return; DB.saveSales(DB.sales().filter(s=>s.id!==id)); renderSales(); }
+function deleteBatch(id) { if(!confirm('Delete batch?')) return; DB.saveBatches(DB.batches().filter(b=>b.id!==id)); renderBatches(); }
+
+// ═══════════════════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════════════════════
+function renderDashboard() {
+  const sales=DB.sales(), stock=DB.stock(), prods=DB.products(), todayStr=today();
+  const todaySales=sales.filter(s=>s.date===todayStr);
+  const totalRevToday=todaySales.reduce((a,s)=>a+s.revenue,0);
+  const totalProfitToday=todaySales.reduce((a,s)=>a+s.grossProfit,0);
+  const allRev=sales.reduce((a,s)=>a+s.revenue,0);
+  const allProfit=sales.reduce((a,s)=>a+s.grossProfit,0);
+  const totalUnits=Object.values(stock).reduce((a,s)=>a+(s.amazon+s.takealot+s.onhand),0);
+  document.getElementById('dashStats').innerHTML=`
+    <div class="stat-card amber"><div class="stat-label">Today's Revenue</div><div class="stat-val amber">${R(totalRevToday)}</div><div class="stat-sub">${todaySales.length} transactions</div></div>
+    <div class="stat-card green"><div class="stat-label">Today's Gross Profit</div><div class="stat-val green">${R(totalProfitToday)}</div></div>
+    <div class="stat-card orange"><div class="stat-label">All-Time Revenue</div><div class="stat-val orange">${R(allRev)}</div><div class="stat-sub">GP: ${R(allProfit)}</div></div>
+    <div class="stat-card blue"><div class="stat-label">Total Stock Units</div><div class="stat-val" style="color:var(--takealot)">${totalUnits}</div><div class="stat-sub">${prods.length} products</div></div>
+  `;
+  const cfg=DB.config();
+  const notice=document.getElementById('dashApiNotice');
+  if(notice) notice.innerHTML = !cfg.proxyUrl ?
+    '<div class="notice">⚙️ <strong>API not configured.</strong> Go to <a href="#" onclick="navigate(\'settings\')" style="color:var(--accent)">Settings</a> to add your Cloudflare Worker URL and enable live sync from Amazon and Takealot.</div>' : '';
+  const recent=[...sales].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  document.getElementById('dashRecentSales').innerHTML = recent.length ?
+    `<table class="tbl"><thead><tr><th>Date</th><th>Product</th><th>Ch</th><th>Revenue</th></tr></thead><tbody>
+    ${recent.map(s=>`<tr><td>${s.date}</td><td>${s.productName}</td><td><span class="tag tag-${s.channel}">${s.channel}</span>${s.source==='api'?'<span style="font-size:10px;color:var(--muted2);margin-left:4px;">API</span>':''}</td><td class="mono pos">${R(s.revenue)}</td></tr>`).join('')}
+    </tbody></table>` : '<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">No sales yet</div></div>';
+  const alerts=prods.filter(p=>{ const s=stock[p.id]; return !s||(s.amazon+s.takealot+s.onhand)<5; }).slice(0,6);
+  document.getElementById('dashStockAlerts').innerHTML = alerts.length ?
+    alerts.map(p=>{ const s=stock[p.id]||{amazon:0,takealot:0,onhand:0}; const total=s.amazon+s.takealot+s.onhand;
+      return `<div class="card-sm" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--muted2)">${p.sku}</div></div><span class="tag ${total===0?'tag-out':'tag-low'}">${total===0?'OUT':'LOW: '+total}</span></div>`;
+    }).join('') : '<div style="color:var(--green);font-size:13px;padding:12px 0;">✓ All stock levels OK</div>';
+}
+
+function renderProducts() {
+  const prods=DB.products(), batches=DB.batches();
+  document.getElementById('productsBody').innerHTML = prods.length ? prods.map(p=>{
+    const lc=landedCost(p,batches);
+    const channels=[p.channels?.amazon&&'<span class="tag tag-amazon">Amazon</span>',p.channels?.takealot&&'<span class="tag tag-takealot">Takealot</span>'].filter(Boolean).join(' ');
+    const sells=[p.amazonPrice,p.takealotPrice].filter(x=>x>0);
+    const avgSell=sells.length?sells.reduce((a,v)=>a+Number(v),0)/sells.length:0;
+    const margin=avgSell?((avgSell-lc.total)/avgSell*100):0;
+    return `<tr><td><strong>${p.name}</strong>${p.amazonSku||p.takealotOfferId?`<br/><span style="font-size:10px;color:var(--muted2)">${p.amazonSku?'AMZSKU:'+p.amazonSku:''}${p.takealotOfferId?' TAL:'+p.takealotOfferId:''}</span>`:''}</td>
+    <td class="mono">${p.sku}</td><td class="mono">$${Number(p.usd||0).toFixed(2)}</td><td class="mono">${lc.rate}</td>
+    <td>${channels||'—'}</td><td class="mono">${p.amazonPrice?'A:'+R(p.amazonPrice):''} ${p.takealotPrice?'T:'+R(p.takealotPrice):''}</td>
+    <td class="mono neutral">${R(lc.total)}</td><td class="mono ${margin>0?'pos':'neg'}">${pct(margin)}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">✕</button></td></tr>`;
+  }).join('') : '<tr><td colspan="9"><div class="empty"><div class="empty-icon">📦</div><div class="empty-text">No products yet</div></div></td></tr>';
+}
+
+let stockFilter='all';
+function filterStock(ch,el) { stockFilter=ch; document.querySelectorAll('.channel-chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); renderStock(); }
+function renderStock() {
+  const prods=DB.products(), stock=DB.stock();
+  const filtered=stockFilter==='all'?prods:prods.filter(p=>p.channels?.[stockFilter]);
+  document.getElementById('stockBody').innerHTML = filtered.length ? filtered.map(p=>{
+    const s=stock[p.id]||{amazon:0,takealot:0,onhand:0};
+    const total=s.amazon+s.takealot+s.onhand;
+    const status=total===0?'<span class="tag tag-out">Out</span>':total<5?'<span class="tag tag-low">Low</span>':'<span class="tag tag-instock">OK</span>';
+    return `<tr><td><strong>${p.name}</strong><br/><span style="font-size:11px;color:var(--muted2)">${p.sku}</span></td>
+    <td class="mono">${s.amazon}</td><td class="mono">${s.takealot}</td><td class="mono">${s.onhand}</td>
+    <td><strong class="mono">${total}</strong><div class="progress"><div class="progress-bar" style="width:${Math.min(100,total/20*100)}%;background:${total===0?'var(--red)':total<5?'var(--accent)':'var(--green)'}"></div></div></td>
+    <td>${status}</td><td><button class="btn btn-secondary btn-sm" onclick="openStockEdit('${p.id}')">Edit</button></td></tr>`;
+  }).join('') : '<tr><td colspan="7"><div class="empty"><div class="empty-icon">🗃️</div><div class="empty-text">No products</div></div></td></tr>';
+}
+
+function openStockEdit(pid) {
+  const s=DB.stock()[pid]||{amazon:0,takealot:0,onhand:0};
+  window.openModal('modalStock');
+  setTimeout(()=>{ const sel=document.getElementById('s_product'); sel.value=pid; document.getElementById('s_amazon').value=s.amazon; document.getElementById('s_takealot').value=s.takealot; document.getElementById('s_onhand').value=s.onhand; },60);
+}
+
+function renderSales() {
+  const sales=[...DB.sales()].sort((a,b)=>b.date.localeCompare(a.date));
+  const totalRev=sales.reduce((a,s)=>a+s.revenue,0), totalGP=sales.reduce((a,s)=>a+s.grossProfit,0), totalCOGS=sales.reduce((a,s)=>a+s.cogs,0);
+  document.getElementById('salesStats').innerHTML=`
+    <div class="stat-card amber"><div class="stat-label">Total Revenue</div><div class="stat-val amber">${R(totalRev)}</div></div>
+    <div class="stat-card green"><div class="stat-label">Gross Profit</div><div class="stat-val green">${R(totalGP)}</div></div>
+    <div class="stat-card orange"><div class="stat-label">COGS</div><div class="stat-val orange">${R(totalCOGS)}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Margin</div><div class="stat-val ${totalGP>=0?'pos':'neg'}">${totalRev?pct(totalGP/totalRev*100):'—'}</div></div>`;
+  document.getElementById('salesBody').innerHTML = sales.length ? sales.map(s=>`<tr>
+    <td>${s.date}</td><td>${s.productName}<br/><span style="font-size:11px;color:var(--muted2)">${s.sku}${s.source==='api'?' · API':''}</span></td>
+    <td><span class="tag tag-${s.channel}">${s.channel}</span></td>
+    <td class="mono">${s.qty}</td><td class="mono">${R(s.price)}</td><td class="mono pos">${R(s.revenue)}</td>
+    <td class="mono neg">${R(s.cogs)}</td><td class="mono ${s.grossProfit>=0?'pos':'neg'}">${R(s.grossProfit)}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteSale('${s.id}')">✕</button></td></tr>`).join('') :
+    '<tr><td colspan="9"><div class="empty"><div class="empty-icon">💳</div><div class="empty-text">No sales yet. Sync from Amazon/Takealot or log manually.</div></div></td></tr>';
+}
+
+function calcCost() {
+  const usd=Number(document.getElementById('calc_usd').value||0), rate=Number(document.getElementById('calc_rate').value||0),
+    duty=Number(document.getElementById('calc_duty').value||0), vat=Number(document.getElementById('calc_vat').value||15),
+    ship=Number(document.getElementById('calc_shipping').value||0), sell=Number(document.getElementById('calc_sell').value||0);
+  if(!usd||!rate){document.getElementById('calcBreakdown').innerHTML='<div class="empty"><div class="empty-icon">🧮</div><div class="empty-text">Enter USD cost and exchange rate</div></div>';return;}
+  const zarCost=usd*rate, dutyAmt=zarCost*(duty/100), landed=zarCost+dutyAmt, vatAmt=landed*(vat/100), total=landed+vatAmt+ship;
+  const margin=sell?((sell-total)/sell*100):null;
+  document.getElementById('calcBreakdown').innerHTML=`
+    <div class="cost-row"><span class="c-label">USD Cost × Rate</span><span class="c-val">$${usd.toFixed(2)} × ${rate} = ${R(zarCost)}</span></div>
+    <div class="cost-row"><span class="c-label">Import Duty (${duty}%)</span><span class="c-val">+ ${R(dutyAmt)}</span></div>
+    <div class="cost-row"><span class="c-label">Landed Cost</span><span class="c-val mono">${R(landed)}</span></div>
+    <div class="cost-row"><span class="c-label">VAT (${vat}%)</span><span class="c-val">+ ${R(vatAmt)}</span></div>
+    <div class="cost-row"><span class="c-label">Local Shipping</span><span class="c-val">+ ${R(ship)}</span></div>
+    <div class="divider"></div>
+    <div class="cost-row"><span class="c-label" style="color:var(--accent)">Total Landed Cost</span><span class="c-val" style="color:var(--accent);font-size:16px;">${R(total)}</span></div>
+    ${sell?`<div class="cost-row"><span class="c-label">Gross Profit / Unit</span><span class="c-val ${margin>=0?'pos':'neg'}">${R(sell-total)}</span></div>
+    <div class="cost-row"><span class="c-label">Margin</span><span class="c-val ${margin>=0?'pos':'neg'}">${pct(margin)}</span></div>`:''}`;
+}
+
+function renderAccounting() {
+  const period=document.getElementById('accPeriod').value;
+  let sales=DB.sales();
+  if(period!=='all'){const cutoff=new Date();cutoff.setDate(cutoff.getDate()-Number(period));sales=sales.filter(s=>s.date>=cutoff.toISOString().split('T')[0]);}
+  const totalRev=sales.reduce((a,s)=>a+s.revenue,0), totalGP=sales.reduce((a,s)=>a+s.grossProfit,0), totalCOGS=sales.reduce((a,s)=>a+s.cogs,0);
+  const amazonRev=sales.filter(s=>s.channel==='amazon').reduce((a,s)=>a+s.revenue,0);
+  const takealotRev=sales.filter(s=>s.channel==='takealot').reduce((a,s)=>a+s.revenue,0);
+  document.getElementById('accStats').innerHTML=`
+    <div class="stat-card amber"><div class="stat-label">Revenue</div><div class="stat-val amber">${R(totalRev)}</div></div>
+    <div class="stat-card green"><div class="stat-label">Gross Profit</div><div class="stat-val green">${R(totalGP)}</div><div class="stat-sub">${totalRev?pct(totalGP/totalRev*100):'-'} margin</div></div>
+    <div class="stat-card orange"><div class="stat-label">COGS</div><div class="stat-val orange">${R(totalCOGS)}</div></div>
+    <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-val neutral">${sales.length}</div></div>`;
+  const maxRev=Math.max(amazonRev,takealotRev,1);
+  document.getElementById('accChannels').innerHTML=`
+    <div style="margin-bottom:14px;"><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span><span class="tag tag-amazon">Amazon</span></span><span class="mono pos">${R(amazonRev)}</span></div><div class="progress"><div class="progress-bar" style="width:${amazonRev/maxRev*100}%;background:var(--amazon)"></div></div></div>
+    <div><div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span><span class="tag tag-takealot">Takealot</span></span><span class="mono pos">${R(takealotRev)}</span></div><div class="progress"><div class="progress-bar" style="width:${takealotRev/maxRev*100}%;background:var(--takealot)"></div></div></div>`;
+  const byProduct={};
+  sales.forEach(s=>{ if(!byProduct[s.pid]){byProduct[s.pid]={name:s.productName,rev:0,gp:0};} byProduct[s.pid].rev+=s.revenue; byProduct[s.pid].gp+=s.grossProfit; });
+  document.getElementById('accTopProducts').innerHTML = Object.values(byProduct).sort((a,b)=>b.gp-a.gp).slice(0,5).map(p=>`
+    <div class="card-sm" style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;"><div><div>${p.name}</div><div style="font-size:11px;color:var(--muted2)">Rev: ${R(p.rev)}</div></div><div class="mono pos">${R(p.gp)}</div></div>`).join('') ||
+    '<div class="empty" style="padding:20px;"><div class="empty-text">No data</div></div>';
+  const byDate={};
+  sales.forEach(s=>{ if(!byDate[s.date])byDate[s.date]={a:0,t:0,rev:0,cogs:0,gp:0}; byDate[s.date].rev+=s.revenue; byDate[s.date].cogs+=s.cogs; byDate[s.date].gp+=s.grossProfit; if(s.channel==='amazon')byDate[s.date].a+=s.revenue; else byDate[s.date].t+=s.revenue; });
+  document.getElementById('accDailyBody').innerHTML = Object.keys(byDate).sort().reverse().map(d=>{
+    const r=byDate[d]; const m=r.rev?r.gp/r.rev*100:0;
+    return `<tr><td>${d}</td><td class="mono">${R(r.a)}</td><td class="mono">${R(r.t)}</td><td class="mono pos">${R(r.rev)}</td><td class="mono neg">${R(r.cogs)}</td><td class="mono ${r.gp>=0?'pos':'neg'}">${R(r.gp)}</td><td class="mono ${m>=0?'pos':'neg'}">${pct(m)}</td></tr>`;
+  }).join('') || '<tr><td colspan="7"><div class="empty"><div class="empty-text">No data</div></div></td></tr>';
+}
+
+function renderBatches() {
+  const batches=DB.batches(), prods=DB.products();
+  document.getElementById('batchesBody').innerHTML = batches.length ? batches.map(b=>{
+    const bp=prods.filter(p=>p.batchId===b.id);
+    const tc=bp.reduce((a,p)=>a+(Number(p.usd||0)*Number(b.rate)),0);
+    return `<tr><td><strong>${b.name}</strong>${b.notes?`<br/><span style="font-size:11px;color:var(--muted2)">${b.notes}</span>`:''}</td><td>${b.date}</td><td class="mono neutral">${b.rate}</td><td class="mono">${b.duty}%</td><td>${bp.length}</td><td class="mono">${R(tc)}</td><td><button class="btn btn-danger btn-sm" onclick="deleteBatch('${b.id}')">✕</button></td></tr>`;
+  }).join('') : '<tr><td colspan="7"><div class="empty"><div class="empty-icon">📥</div><div class="empty-text">No import batches yet</div></div></td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// FINANCE — PURCHASES
+// ═══════════════════════════════════════════════════════════
+
+function togglePurchaseCurrency() {
+  const cur = document.getElementById('pu_currency').value;
+  document.getElementById('pu_rate_wrap').style.display = cur === 'USD' ? 'block' : 'none';
+  const batchId = document.getElementById('pu_batch').value;
+  if(cur === 'USD' && batchId) {
+    const b = DB.batches().find(x => x.id === batchId);
+    if(b) document.getElementById('pu_rate').value = b.rate;
+  }
+  calcPurchaseZAR();
+}
+
+function calcPurchaseZAR() {
+  const cur = document.getElementById('pu_currency').value;
+  const amt = Number(document.getElementById('pu_amount').value || 0);
+  const rate = Number(document.getElementById('pu_rate').value || 1);
+  document.getElementById('pu_zar').value = cur === 'USD' ? (amt * rate).toFixed(2) : amt.toFixed(2);
+}
+
+function populatePurchaseBatch() {
+  const sel = document.getElementById('pu_batch');
+  sel.innerHTML = '<option value="">— No Batch —</option>';
+  DB.batches().forEach(b => {
+    const o = document.createElement('option');
+    o.value = b.id; o.textContent = b.name + ' (' + b.rate + ')';
+    sel.appendChild(o);
+  });
+}
+
+function savePurchase() {
+  const supplier = document.getElementById('pu_supplier').value.trim();
+  const amount = Number(document.getElementById('pu_amount').value || 0);
+  if(!supplier || !amount) return alert('Supplier and amount required');
+  const cur = document.getElementById('pu_currency').value;
+  const rate = Number(document.getElementById('pu_rate').value || 1);
+  const zarAmount = cur === 'USD' ? amount * rate : amount;
+  const purchases = DB.purchases();
+  purchases.push({
+    id: Date.now().toString(),
+    date: document.getElementById('pu_date').value || today(),
+    supplier,
+    desc: document.getElementById('pu_desc').value,
+    batchId: document.getElementById('pu_batch').value,
+    currency: cur,
+    amount,
+    rate: cur === 'USD' ? rate : null,
+    zarAmount,
+    status: document.getElementById('pu_status').value,
+  });
+  DB.savePurchases(purchases);
+  closeModal('modalPurchase');
+  renderPurchases();
+  renderBank();
+  document.querySelectorAll('#modalPurchase input').forEach(i => i.value = '');
+}
+
+function deletePurchase(id) {
+  if(!confirm('Delete this purchase?')) return;
+  DB.savePurchases(DB.purchases().filter(p => p.id !== id));
+  renderPurchases(); renderBank();
+}
+
+function renderPurchases() {
+  const purchases = [...DB.purchases()].sort((a,b) => b.date.localeCompare(a.date));
+  const totalPaid = purchases.filter(p=>p.status==='paid').reduce((a,p)=>a+p.zarAmount,0);
+  const totalPending = purchases.filter(p=>p.status==='pending').reduce((a,p)=>a+p.zarAmount,0);
+  const batches = DB.batches();
+  document.getElementById('purchaseStats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Paid</div><div class="stat-val neg">${R(totalPaid)}</div><div class="stat-sub">${purchases.filter(p=>p.status==='paid').length} invoices</div></div>
+    <div class="stat-card amber"><div class="stat-label">Pending / Unpaid</div><div class="stat-val amber">${R(totalPending)}</div><div class="stat-sub">${purchases.filter(p=>p.status==='pending').length} invoices</div></div>
+    <div class="stat-card orange"><div class="stat-label">Total Committed</div><div class="stat-val orange">${R(totalPaid+totalPending)}</div></div>
+  `;
+  document.getElementById('purchasesBody').innerHTML = purchases.length ? purchases.map(p => {
+    const batch = p.batchId ? batches.find(b=>b.id===p.batchId) : null;
+    return `<tr>
+      <td>${p.date}</td>
+      <td><strong>${p.supplier}</strong></td>
+      <td>${p.desc||'—'}</td>
+      <td>${batch?`<span class="tag tag-warn">${batch.name}</span>`:'—'}</td>
+      <td class="mono">${p.currency}</td>
+      <td class="mono">${p.currency==='USD'?'$'+Number(p.amount).toFixed(2):R(p.amount)}</td>
+      <td class="mono neg">${R(p.zarAmount)}</td>
+      <td><span class="tag ${p.status==='paid'?'tag-out':'tag-warn'}">${p.status==='paid'?'Paid':'Pending'}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletePurchase('${p.id}')">✕</button></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="9"><div class="empty"><div class="empty-icon">🧾</div><div class="empty-text">No purchases yet</div></div></td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// FINANCE — BANK LEDGER
+// ═══════════════════════════════════════════════════════════
+
+function saveOpeningBalance() {
+  const amount = Number(document.getElementById('ob_amount').value || 0);
+  const date = document.getElementById('ob_date').value || today();
+  DB.saveBankMeta({ openingBalance: amount, openingDate: date });
+  closeModal('modalOpeningBalance');
+  renderBank();
+}
+
+function saveAdjustment() {
+  const amount = Number(document.getElementById('adj_amount').value || 0);
+  if(!amount) return alert('Enter an amount');
+  const adjs = DB.adjustments();
+  adjs.push({
+    id: Date.now().toString(),
+    date: document.getElementById('adj_date').value || today(),
+    type: document.getElementById('adj_type').value,
+    amount,
+    desc: document.getElementById('adj_desc').value || 'Manual adjustment',
+  });
+  DB.saveAdjustments(adjs);
+  closeModal('modalAdjust');
+  renderBank();
+  document.querySelectorAll('#modalAdjust input').forEach(i => i.value='');
+}
+
+function buildLedgerEntries(period) {
+  const meta = DB.bankMeta();
+  const entries = [];
+  if(meta.openingDate) entries.push({ date: meta.openingDate, type:'opening', desc:'Opening Balance', subDesc:'Sparq Holdings', amount: meta.openingBalance, id:'opening' });
+  DB.sales().forEach(s => entries.push({ date:s.date, type:'sale', desc:s.productName, subDesc:s.channel+(s.qty>1?' × '+s.qty:''), amount:s.revenue, id:s.id }));
+  DB.purchases().filter(p=>p.status==='paid').forEach(p => entries.push({ date:p.date, type:'purchase', desc:p.supplier, subDesc:p.desc||'Stock purchase', amount:-p.zarAmount, id:p.id }));
+  DB.adjustments().forEach(a => entries.push({ date:a.date, type:'adjust', desc:a.desc, subDesc:a.type==='credit'?'Credit':'Debit', amount:a.type==='credit'?a.amount:-a.amount, id:a.id }));
+  entries.sort((a,b) => a.date.localeCompare(b.date)||(a.type==='opening'?-1:1));
+  let running = 0;
+  const withBalance = entries.map(e => { running += e.amount; return {...e, runningBalance: running}; });
+  const finalBalance = running;
+  if(period && period !== 'all') {
+    const cutStr = new Date(Date.now()-Number(period)*86400000).toISOString().split('T')[0];
+    return { entries: withBalance.filter(e => e.date >= cutStr || e.type==='opening'), finalBalance };
+  }
+  return { entries: withBalance, finalBalance };
+}
+
+function renderBank() {
+  const period = document.getElementById('bankPeriod')?.value || 'all';
+  const { entries, finalBalance } = buildLedgerEntries(period);
+  const totalIn = entries.filter(e=>e.amount>0&&e.type!=='opening').reduce((a,e)=>a+e.amount,0);
+  const totalOut = Math.abs(entries.filter(e=>e.amount<0).reduce((a,e)=>a+e.amount,0));
+  const balEl = document.getElementById('bankBalanceDisplay');
+  if(balEl) { balEl.textContent = R(finalBalance); balEl.className = 'balance-amount'+(finalBalance<0?' neg':''); }
+  const meta = DB.bankMeta();
+  const subEl = document.getElementById('bankBalanceSub');
+  if(subEl) subEl.textContent = meta.openingDate ? `Since ${meta.openingDate} · Opening: ${R(meta.openingBalance)}` : 'Set your opening balance to get started';
+  const inEl=document.getElementById('bankTotalIn'); if(inEl) inEl.textContent=R(totalIn);
+  const outEl=document.getElementById('bankTotalOut'); if(outEl) outEl.textContent=R(totalOut);
+  const netEl=document.getElementById('bankNetMove'); if(netEl){ netEl.textContent=R(totalIn-totalOut); netEl.className='balance-stat-val '+(totalIn-totalOut>=0?'pos':'neg'); }
+  const ledgerEl = document.getElementById('ledgerLines');
+  if(!ledgerEl) return;
+  const display = [...entries].reverse();
+  ledgerEl.innerHTML = display.length ? display.map(e => {
+    const isIn = e.amount >= 0;
+    const typeLabel = e.type==='opening'?'<span class="pill pill-adjust">OPENING</span>':
+                      e.type==='sale'?`<span class="pill pill-sale">${e.subDesc.toUpperCase()}</span>`:
+                      e.type==='purchase'?'<span class="pill pill-purchase">PURCHASE</span>':
+                      `<span class="pill pill-adjust">${e.subDesc.toUpperCase()}</span>`;
+    return `<div class="ledger-line">
+      <span class="ledger-date">${e.date}</span>
+      <div class="ledger-desc"><span>${e.desc}</span><span class="ledger-sub">${typeLabel}</span></div>
+      <span class="ledger-amount ${isIn?'txn-in':'txn-out'}">${isIn?'+':''}${R(e.amount)}</span>
+      <span class="ledger-balance">${R(e.runningBalance)}</span>
+    </div>`;
+  }).join('') : '<div class="empty"><div class="empty-icon">🏦</div><div class="empty-text">No transactions. Set an opening balance to begin.</div></div>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// FINANCE — CASH FLOW & P&L
+// ═══════════════════════════════════════════════════════════
+
+function renderCashflow() {
+  const period = document.getElementById('cfPeriod')?.value || '30';
+  let sales = DB.sales(), purchases = DB.purchases();
+  if(period !== 'all') {
+    const cutStr = new Date(Date.now()-Number(period)*86400000).toISOString().split('T')[0];
+    sales = sales.filter(s=>s.date>=cutStr); purchases = purchases.filter(p=>p.date>=cutStr);
+  }
+  const totalRevenue = sales.reduce((a,s)=>a+s.revenue,0);
+  const totalCOGS = sales.reduce((a,s)=>a+s.cogs,0);
+  const grossProfit = totalRevenue - totalCOGS;
+  const paidPurchases = purchases.filter(p=>p.status==='paid').reduce((a,p)=>a+p.zarAmount,0);
+  const pendingPurchases = purchases.filter(p=>p.status==='pending').reduce((a,p)=>a+p.zarAmount,0);
+  const netProfit = grossProfit - paidPurchases;
+  const grossMargin = totalRevenue?(grossProfit/totalRevenue*100):0;
+  const netMargin = totalRevenue?(netProfit/totalRevenue*100):0;
+
+  document.getElementById('cfStats').innerHTML = `
+    <div class="stat-card amber"><div class="stat-label">Revenue</div><div class="stat-val amber">${R(totalRevenue)}</div></div>
+    <div class="stat-card green"><div class="stat-label">Gross Profit</div><div class="stat-val green">${R(grossProfit)}</div><div class="stat-sub">${pct(grossMargin)} margin</div></div>
+    <div class="stat-card ${netProfit>=0?'green':''}"><div class="stat-label">Net Profit</div><div class="stat-val ${netProfit>=0?'pos':'neg'}">${R(netProfit)}</div><div class="stat-sub">${pct(netMargin)} net margin</div></div>
+    <div class="stat-card orange"><div class="stat-label">Stock Purchased</div><div class="stat-val orange">${R(paidPurchases)}</div><div class="stat-sub">${R(pendingPurchases)} pending</div></div>
+  `;
+  const amazonRev=sales.filter(s=>s.channel==='amazon').reduce((a,s)=>a+s.revenue,0);
+  const takealotRev=sales.filter(s=>s.channel==='takealot').reduce((a,s)=>a+s.revenue,0);
+  const maxIn=Math.max(amazonRev,takealotRev,1);
+  document.getElementById('cfMoneyIn').innerHTML = `
+    <div class="cost-row"><span class="c-label">Amazon Sales</span><span class="c-val pos">${R(amazonRev)}</span></div>
+    <div style="margin:4px 0 12px;"><div class="progress"><div class="progress-bar" style="width:${amazonRev/maxIn*100}%;background:var(--amazon)"></div></div></div>
+    <div class="cost-row"><span class="c-label">Takealot Sales</span><span class="c-val pos">${R(takealotRev)}</span></div>
+    <div style="margin:4px 0 12px;"><div class="progress"><div class="progress-bar" style="width:${takealotRev/maxIn*100}%;background:var(--takealot)"></div></div></div>
+    <div class="cost-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:10px;font-weight:700;"><span class="c-label" style="color:var(--text)">Total Revenue</span><span class="c-val pos" style="font-size:15px;">${R(totalRevenue)}</span></div>
+  `;
+  document.getElementById('cfMoneyOut').innerHTML = `
+    <div class="cost-row"><span class="c-label">COGS (landed cost of sales)</span><span class="c-val neg">${R(totalCOGS)}</span></div>
+    <div class="cost-row"><span class="c-label">Stock Purchases (paid)</span><span class="c-val neg">${R(paidPurchases)}</span></div>
+    <div class="cost-row"><span class="c-label">Stock Purchases (pending)</span><span class="c-val neutral">${R(pendingPurchases)}</span></div>
+    <div class="cost-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:10px;font-weight:700;"><span class="c-label" style="color:var(--text)">Total Out</span><span class="c-val neg" style="font-size:15px;">${R(totalCOGS+paidPurchases)}</span></div>
+  `;
+  document.getElementById('cfPL').innerHTML = `
+    <div class="cost-row"><span class="c-label">Gross Revenue</span><span class="c-val pos">${R(totalRevenue)}</span></div>
+    <div class="cost-row"><span class="c-label">Less: COGS</span><span class="c-val neg">(${R(totalCOGS)})</span></div>
+    <div class="cost-row" style="font-weight:600;"><span class="c-label" style="color:var(--text)">= Gross Profit</span><span class="c-val ${grossProfit>=0?'pos':'neg'}">${R(grossProfit)} <span style="font-size:11px;opacity:.7;">${pct(grossMargin)}</span></span></div>
+    <div style="margin:10px 0;border-top:1px dashed var(--border);"></div>
+    <div class="cost-row"><span class="c-label">Less: Stock Purchases (paid)</span><span class="c-val neg">(${R(paidPurchases)})</span></div>
+    <div style="margin:10px 0;border-top:1px solid var(--border);"></div>
+    <div class="cost-row" style="font-weight:700;font-size:15px;"><span class="c-label" style="color:${netProfit>=0?'var(--green)':'var(--red)'};font-size:13px;letter-spacing:.05em;">NET PROFIT</span><span class="c-val ${netProfit>=0?'pos':'neg'}">${R(netProfit)} <span style="font-size:11px;opacity:.7;">${pct(netMargin)}</span></span></div>
+    ${pendingPurchases>0?`<div style="margin-top:12px;padding:10px 12px;background:rgba(240,192,64,.06);border-radius:8px;font-size:12px;color:var(--accent);">⚠ ${R(pendingPurchases)} in pending purchases not yet deducted.</div>`:''}
+  `;
+  const byDate = {};
+  sales.forEach(s=>{ if(!byDate[s.date])byDate[s.date]={revenue:0,purchases:0}; byDate[s.date].revenue+=s.revenue; });
+  purchases.filter(p=>p.status==='paid').forEach(p=>{ if(!byDate[p.date])byDate[p.date]={revenue:0,purchases:0}; byDate[p.date].purchases+=p.zarAmount; });
+  let running = DB.bankMeta().openingBalance || 0;
+  document.getElementById('cfDailyBody').innerHTML = Object.keys(byDate).sort().reverse().map(d=>{
+    const r=byDate[d]; const net=r.revenue-r.purchases; running+=net;
+    return `<tr><td>${d}</td><td class="mono pos">${R(r.revenue)}</td><td class="mono ${r.purchases?'neg':'muted2'}">${r.purchases?R(r.purchases):'—'}</td><td class="mono ${net>=0?'pos':'neg'}">${R(net)}</td><td class="mono">${R(running)}</td></tr>`;
+  }).join('') || '<tr><td colspan="5"><div class="empty"><div class="empty-text">No data</div></div></td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// AI ENGINE — GEMINI
+// ═══════════════════════════════════════════════════════════
+
+function getGeminiKey() { return DB.config().geminiKey || ''; }
+
+function buildBusinessContext() {
+  const prods = DB.products(), sales = DB.sales(), stock = DB.stock(),
+        batches = DB.batches(), purchases = DB.purchases(), meta = DB.bankMeta();
+  const totalRev = sales.reduce((a,s)=>a+s.revenue,0);
+  const totalGP = sales.reduce((a,s)=>a+s.grossProfit,0);
+  const totalPurchases = purchases.filter(p=>p.status==='paid').reduce((a,p)=>a+p.zarAmount,0);
+  const { finalBalance } = buildLedgerEntries('all');
+
+  const prodSummary = prods.map(p => {
+    const lc = landedCost(p, batches);
+    const s = stock[p.id]||{amazon:0,takealot:0,onhand:0};
+    const prodSales = sales.filter(x=>x.pid===p.id);
+    const revenue = prodSales.reduce((a,x)=>a+x.revenue,0);
+    const gp = prodSales.reduce((a,x)=>a+x.grossProfit,0);
+    const margin = revenue ? ((gp/revenue)*100).toFixed(1) : 0;
+    const amazonSales = prodSales.filter(x=>x.channel==='amazon').reduce((a,x)=>a+x.qty,0);
+    const takealotSales = prodSales.filter(x=>x.channel==='takealot').reduce((a,x)=>a+x.qty,0);
+    return `- ${p.name} (SKU: ${p.sku}): USD cost $${p.usd}, landed R${lc.total.toFixed(2)}, Amazon price R${p.amazonPrice||'N/A'}, Takealot price R${p.takealotPrice||'N/A'}, margin ${margin}%, stock: Amazon=${s.amazon} Takealot=${s.takealot} OnHand=${s.onhand}, total revenue R${revenue.toFixed(2)}, gross profit R${gp.toFixed(2)}, units sold Amazon=${amazonSales} Takealot=${takealotSales}`;
+  }).join('\n');
+
+  const recentSales = [...sales].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10)
+    .map(s=>`${s.date}: ${s.productName} × ${s.qty} on ${s.channel} = R${s.revenue.toFixed(2)} (GP R${s.grossProfit.toFixed(2)})`).join('\n');
+
+  return `You are Sparq AI, a business intelligence assistant for Sparq Holdings — an electronics importer in Durban, South Africa that sells on Amazon and Takealot. The owner is Jarred. Answer in plain English, be concise and specific. Use ZAR (R) for all currency unless asked otherwise.
+
+BUSINESS SNAPSHOT:
+- Total revenue all time: R${totalRev.toFixed(2)}
+- Total gross profit: R${totalGP.toFixed(2)} (${totalRev?(totalGP/totalRev*100).toFixed(1):0}% margin)
+- Stock purchases paid: R${totalPurchases.toFixed(2)}
+- Net profit: R${(totalGP-totalPurchases).toFixed(2)}
+- Bank balance (Sparq Holdings): R${finalBalance.toFixed(2)}
+- Opening balance: R${meta.openingBalance||0} (as of ${meta.openingDate||'not set'})
+
+PRODUCTS & STOCK (${prods.length} products):
+${prodSummary || 'No products yet'}
+
+RECENT SALES (last 10):
+${recentSales || 'No sales yet'}
+
+PURCHASE HISTORY: ${purchases.length} invoices, R${totalPurchases.toFixed(2)} paid, R${purchases.filter(p=>p.status==='pending').reduce((a,p)=>a+p.zarAmount,0).toFixed(2)} pending`;
+}
+
+async function callGemini(prompt, imageBase64 = null, imageMime = null) {
+  const key = getGeminiKey();
+  if(!key) throw new Error('No Gemini API key. Go to Settings → AI Configuration and add your key from aistudio.google.com');
+  const model = imageBase64 ? 'gemini-1.5-flash' : 'gemini-1.5-flash';
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+  const parts = [];
+  if(imageBase64) parts.push({ inlineData: { mimeType: imageMime, data: imageBase64 }});
+  parts.push({ text: prompt });
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts }], generationConfig: { temperature: 0.4, maxOutputTokens: 1500 }})
+  });
+  if(!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'Gemini API error');
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+}
+
+async function testGemini() {
+  const result = document.getElementById('geminiTestResult');
+  result.innerHTML = '<span style="color:var(--accent)">Testing...</span>';
+  try {
+    const reply = await callGemini('Reply with exactly: "Sparq AI connected ✓"');
+    result.innerHTML = `<span style="color:var(--green)">${reply.trim()}</span>`;
+  } catch(e) {
+    result.innerHTML = `<span style="color:var(--red)">✗ ${e.message}</span>`;
+  }
+}
+
+// ─── ASK SPARQ CHAT ───────────────────────────────────────
+let chatHistory = [];
+
+function initChat() { /* already rendered */ }
+
+function clearChat() {
+  chatHistory = [];
+  document.getElementById('chatMessages').innerHTML =
+    '<div class="ai-msg assistant">Chat cleared. Ask me anything about your business.</div>';
+}
+
+function quickAsk(q) {
+  document.getElementById('chatInput').value = q;
+  sendChat();
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
+  if(!q) return;
+  input.value = '';
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML += `<div class="ai-msg user">${q}</div>`;
+  msgs.innerHTML += `<div class="ai-msg assistant thinking" id="thinkingMsg">Sparq is thinking...</div>`;
+  msgs.scrollTop = msgs.scrollHeight;
+
+  chatHistory.push({ role: 'user', content: q });
+
+  try {
+    const context = buildBusinessContext();
+    const historyStr = chatHistory.slice(-6).map(m=>`${m.role==='user'?'Jarred':'Sparq'}: ${m.content}`).join('\n');
+    const prompt = `${context}\n\nCONVERSATION:\n${historyStr}\n\nSparq:`;
+    const reply = await callGemini(prompt);
+    chatHistory.push({ role: 'assistant', content: reply });
+    document.getElementById('thinkingMsg').outerHTML = `<div class="ai-msg assistant">${reply.replace(/\n/g,'<br/>')}</div>`;
+  } catch(e) {
+    document.getElementById('thinkingMsg').outerHTML = `<div class="ai-msg assistant" style="color:var(--red)">⚠ ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ─── AI INSIGHTS ──────────────────────────────────────────
+async function generateInsights() {
+  const btn = document.getElementById('insightsBtn');
+  btn.disabled = true; btn.textContent = '⟳ Analysing...';
+  const el = document.getElementById('insightsContent');
+  el.innerHTML = '<div class="empty"><div class="empty-icon" style="animation:pulse 1s infinite">🧠</div><div class="empty-text">Gemini is analysing your business...</div></div>';
+  try {
+    const context = buildBusinessContext();
+    const prompt = `${context}
+
+Analyse this business and produce exactly 5 specific, actionable insights. For each insight:
+- Start with an emoji
+- Give it a bold title on the first line
+- Follow with 2-3 sentences of specific analysis using the actual numbers from the data
+- Be direct and specific, not generic
+
+Format each insight as:
+EMOJI TITLE
+Body text here.
+
+Focus on: margin health, stock risks, channel performance, cash position, opportunities.`;
+    const reply = await callGemini(prompt);
+    const insights = reply.split(/\n(?=[🔴🟡🟢⚠️💡📊💰📦🚀⚡🎯✅❌🔥])/g).filter(s=>s.trim());
+    el.innerHTML = insights.map(ins => {
+      const lines = ins.trim().split('\n');
+      const titleLine = lines[0] || '';
+      const body = lines.slice(1).join(' ').trim();
+      const emoji = titleLine.match(/^(\p{Emoji}+)/u)?.[1] || '📊';
+      const title = titleLine.replace(/^(\p{Emoji}+\s*)/u,'').trim();
+      return `<div class="insight-card"><div class="insight-icon">${emoji}</div><div class="insight-body"><strong>${title}</strong>${body}</div></div>`;
+    }).join('') || `<div class="insight-card"><div class="insight-icon">📊</div><div class="insight-body"><strong>Analysis Complete</strong>${reply}</div></div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="notice red">⚠ ${e.message}</div>`;
+  }
+  btn.disabled = false; btn.textContent = '⟳ Generate Insights';
+}
+
+// ─── FORECAST (RULE-BASED) ────────────────────────────────
+function generateForecast() {
+  const sales = DB.sales(), prods = DB.products(), stock = DB.stock(), batches = DB.batches();
+  if(!sales.length) {
+    document.getElementById('forecastStats').innerHTML = '';
+    document.getElementById('forecastChart').innerHTML = '<div class="empty"><div class="empty-text">No sales data to forecast from</div></div>';
+    return;
+  }
+
+  // Calculate daily average from last 14 days
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-14);
+  const cutStr = cutoff.toISOString().split('T')[0];
+  const recentSales = sales.filter(s=>s.date>=cutStr);
+  const days14 = 14;
+  const avgDailyRev = recentSales.reduce((a,s)=>a+s.revenue,0) / days14;
+  const avgDailyGP = recentSales.reduce((a,s)=>a+s.grossProfit,0) / days14;
+  const avgDailyUnits = recentSales.reduce((a,s)=>a+s.qty,0) / days14;
+
+  const proj7 = avgDailyRev * 7;
+  const proj30 = avgDailyRev * 30;
+
+  document.getElementById('forecastStats').innerHTML = `
+    <div class="stat-card amber"><div class="stat-label">7-Day Revenue Forecast</div><div class="stat-val amber">${R(proj7)}</div><div class="stat-sub">Based on 14-day avg</div></div>
+    <div class="stat-card green"><div class="stat-label">7-Day GP Forecast</div><div class="stat-val green">${R(avgDailyGP*7)}</div></div>
+    <div class="stat-card orange"><div class="stat-label">30-Day Revenue Forecast</div><div class="stat-val orange">${R(proj30)}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Daily Revenue</div><div class="stat-val neutral">${R(avgDailyRev)}</div><div class="stat-sub">${avgDailyUnits.toFixed(1)} units/day</div></div>
+  `;
+
+  // 7-day chart
+  const maxDay = avgDailyRev * 1.3;
+  const next7 = Array.from({length:7},(_,i)=>{
+    const d = new Date(); d.setDate(d.getDate()+i+1);
+    const dateStr = d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
+    const variance = 0.85 + Math.random()*0.3;
+    const projected = avgDailyRev * variance;
+    return {dateStr, projected};
+  });
+  document.getElementById('forecastChart').innerHTML = next7.map(d=>`
+    <div class="forecast-bar-row">
+      <span style="font-size:11px;color:var(--muted2)">${d.dateStr}</span>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,d.projected/maxDay*100)}%"></div></div>
+      <span class="mono" style="font-size:12px;text-align:right;">${R(d.projected)}</span>
+    </div>`).join('');
+
+  // Stock depletion
+  const deplEl = document.getElementById('forecastDepletion');
+  deplEl.innerHTML = prods.map(p => {
+    const s = stock[p.id]||{amazon:0,takealot:0,onhand:0};
+    const total = s.amazon+s.takealot+s.onhand;
+    const prodSales = recentSales.filter(x=>x.pid===p.id);
+    const dailyUnits = prodSales.reduce((a,x)=>a+x.qty,0)/days14;
+    if(!dailyUnits) return `<div class="card-sm" style="margin-bottom:8px;display:flex;justify-content:space-between;"><span>${p.name}</span><span style="color:var(--muted2);font-size:12px;">No recent sales</span></div>`;
+    const daysLeft = dailyUnits>0 ? Math.floor(total/dailyUnits) : 999;
+    const urgency = daysLeft<7?'var(--red)':daysLeft<14?'var(--accent)':'var(--green)';
+    return `<div class="card-sm" style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:13px;">${p.name}</span>
+        <span style="color:${urgency};font-family:var(--font-head);font-weight:700;">${daysLeft>90?'90+ days':daysLeft+' days'}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted2);margin-top:3px;">${total} units · ${dailyUnits.toFixed(1)}/day</div>
+    </div>`;
+  }).join('') || '<div class="empty"><div class="empty-text">No products</div></div>';
+
+  // 30-day table
+  const weeks = ['Week 1','Week 2','Week 3','Week 4'];
+  document.getElementById('forecastTable').innerHTML = `<table class="tbl"><thead><tr><th>Period</th><th>Revenue</th><th>Gross Profit</th><th>Units</th></tr></thead><tbody>
+    ${weeks.map((w,i)=>{
+      const v = 0.9+Math.random()*0.2;
+      return `<tr><td>${w}</td><td class="mono amber">${R(avgDailyRev*7*v)}</td><td class="mono pos">${R(avgDailyGP*7*v)}</td><td class="mono">${Math.round(avgDailyUnits*7*v)}</td></tr>`;
+    }).join('')}
+    <tr style="font-weight:700;"><td>Total 30 Days</td><td class="mono amber">${R(proj30)}</td><td class="mono pos">${R(avgDailyGP*30)}</td><td class="mono">${Math.round(avgDailyUnits*30)}</td></tr>
+  </tbody></table>`;
+}
+
+// ─── PRICING ADVISOR ──────────────────────────────────────
+function initPricing() {
+  const sel = document.getElementById('pa_product');
+  sel.innerHTML = '<option value="">— Select Product —</option>';
+  DB.products().forEach(p => { const o=document.createElement('option'); o.value=p.id; o.textContent=p.name; sel.appendChild(o); });
+}
+
+function loadProductPricing() {
+  const pid = document.getElementById('pa_product').value;
+  const wrap = document.getElementById('pa_landed_info');
+  if(!pid) { wrap.style.display='none'; return; }
+  const prod = DB.products().find(p=>p.id===pid);
+  const lc = landedCost(prod, DB.batches());
+  wrap.style.display='block';
+  document.getElementById('pa_landed_val').textContent = R(lc.total);
+  calcPricing();
+}
+
+function calcPricing() {
+  const pid = document.getElementById('pa_product').value;
+  if(!pid) return;
+  const prod = DB.products().find(p=>p.id===pid);
+  const lc = landedCost(prod, DB.batches());
+  const targetMargin = Number(document.getElementById('pa_margin').value||35)/100;
+  const competitor = Number(document.getElementById('pa_competitor').value||0);
+  const amazonFee = Number(document.getElementById('pa_amazon_fee').value||15)/100;
+  const takealotFee = Number(document.getElementById('pa_takealot_fee').value||10)/100;
+
+  // Price to achieve target margin after channel fees
+  const amazonPrice = lc.total / (1 - targetMargin - amazonFee);
+  const takealotPrice = lc.total / (1 - targetMargin - takealotFee);
+  const minPrice = lc.total * 1.05; // 5% minimum above landed
+  const aggressiveAmazon = competitor ? competitor * 0.95 : amazonPrice * 0.9;
+  const aggressiveTakealot = competitor ? competitor * 0.95 : takealotPrice * 0.9;
+  const aggressiveMarginA = ((aggressiveAmazon*(1-amazonFee))-lc.total)/aggressiveAmazon*100;
+  const aggressiveMarginT = ((aggressiveTakealot*(1-takealotFee))-lc.total)/aggressiveTakealot*100;
+
+  document.getElementById('pricingResult').innerHTML = `
+    <div style="margin-bottom:14px;"><div style="font-size:11px;color:var(--muted2);margin-bottom:8px;font-family:var(--font-head);">AMAZON</div>
+      <div class="price-tier"><span class="price-tier-label">Target (${(targetMargin*100).toFixed(0)}% margin)</span><span class="price-tier-val amber">${R(amazonPrice)}</span></div>
+      <div class="price-tier"><span class="price-tier-label">Aggressive${competitor?' (5% below competitor)':''}</span><span class="price-tier-val" style="color:var(--accent2)">${R(Math.max(aggressiveAmazon,minPrice))} <span style="font-size:11px;color:var(--muted2)">(${aggressiveMarginA.toFixed(1)}% margin)</span></span></div>
+      <div class="price-tier"><span class="price-tier-label">Break-even minimum</span><span class="price-tier-val" style="color:var(--muted2)">${R(minPrice)}</span></div>
+    </div>
+    <div class="divider"></div>
+    <div style="margin-top:14px;"><div style="font-size:11px;color:var(--muted2);margin-bottom:8px;font-family:var(--font-head);">TAKEALOT</div>
+      <div class="price-tier"><span class="price-tier-label">Target (${(targetMargin*100).toFixed(0)}% margin)</span><span class="price-tier-val amber">${R(takealotPrice)}</span></div>
+      <div class="price-tier"><span class="price-tier-label">Aggressive${competitor?' (5% below competitor)':''}</span><span class="price-tier-val" style="color:var(--accent2)">${R(Math.max(aggressiveTakealot,minPrice))} <span style="font-size:11px;color:var(--muted2)">(${aggressiveMarginT.toFixed(1)}% margin)</span></span></div>
+      <div class="price-tier"><span class="price-tier-label">Break-even minimum</span><span class="price-tier-val" style="color:var(--muted2)">${R(minPrice)}</span></div>
+    </div>
+    <div style="margin-top:14px;padding:10px 12px;background:var(--bg);border-radius:8px;font-size:12px;">
+      <div style="color:var(--muted2);margin-bottom:4px;">Current prices vs recommended</div>
+      <div>Amazon: <span class="mono">${R(prod.amazonPrice||0)}</span> → <span class="mono amber">${R(amazonPrice)}</span></div>
+      <div>Takealot: <span class="mono">${R(prod.takealotPrice||0)}</span> → <span class="mono amber">${R(takealotPrice)}</span></div>
+    </div>
+  `;
+}
+
+async function aiPricingAdvice() {
+  const pid = document.getElementById('pa_product').value;
+  if(!pid) return alert('Select a product first');
+  const card = document.getElementById('aiPriceCard');
+  const result = document.getElementById('aiPriceResult');
+  card.style.display='block';
+  result.innerHTML = '<div style="color:var(--accent);font-size:13px;">✨ Gemini is analysing pricing strategy...</div>';
+  const prod = DB.products().find(p=>p.id===pid);
+  const lc = landedCost(prod, DB.batches());
+  const sales = DB.sales().filter(s=>s.pid===pid);
+  const competitor = document.getElementById('pa_competitor').value;
+  try {
+    const prompt = `${buildBusinessContext()}
+
+Provide specific pricing advice for this product:
+- Product: ${prod.name} (SKU: ${prod.sku})
+- Landed cost: R${lc.total.toFixed(2)} (USD $${prod.usd} × ${lc.rate} rate, ${lc.duty}% duty, 15% VAT, R${prod.shipping} shipping)
+- Current Amazon price: R${prod.amazonPrice||'not set'}
+- Current Takealot price: R${prod.takealotPrice||'not set'}
+- Units sold: ${sales.reduce((a,s)=>a+s.qty,0)} total
+- Revenue: R${sales.reduce((a,s)=>a+s.revenue,0).toFixed(2)}
+- Avg gross margin: ${sales.length?(sales.reduce((a,s)=>a+s.grossProfit,0)/sales.reduce((a,s)=>a+s.revenue,0)*100).toFixed(1):0}%
+${competitor?`- Competitor price: R${competitor}`:''}
+
+Give 3-4 specific, actionable pricing recommendations. Consider the South African market, platform fees (~15% Amazon, ~10% Takealot), and margin health. Be direct and use real numbers.`;
+    const reply = await callGemini(prompt);
+    result.innerHTML = reply.replace(/\n/g,'<br/>');
+  } catch(e) {
+    result.innerHTML = `<span style="color:var(--red)">⚠ ${e.message}</span>`;
+  }
+}
+
+// ─── REORDER RECOMMENDATIONS ──────────────────────────────
+function generateReorder() {
+  const prods = DB.products(), stock = DB.stock(), sales = DB.sales(), batches = DB.batches();
+  const cutStr = new Date(Date.now()-14*86400000).toISOString().split('T')[0];
+  const recentSales = sales.filter(s=>s.date>=cutStr);
+
+  const analysis = prods.map(p => {
+    const s = stock[p.id]||{amazon:0,takealot:0,onhand:0};
+    const total = s.amazon+s.takealot+s.onhand;
+    const prodSales = recentSales.filter(x=>x.pid===p.id);
+    const dailyUnits = prodSales.reduce((a,x)=>a+x.qty,0)/14;
+    const daysLeft = dailyUnits>0 ? total/dailyUnits : 999;
+    const leadtime = 21; // assume 21-day lead time from China
+    const reorderPoint = dailyUnits * (leadtime + 7); // safety stock
+    const suggestedQty = Math.ceil(dailyUnits * 45); // 45-day supply
+    const lc = landedCost(p, batches);
+    const estimatedCostUSD = suggestedQty * Number(p.usd||0);
+    const estimatedCostZAR = suggestedQty * lc.total;
+    return { p, total, dailyUnits, daysLeft, reorderPoint, suggestedQty, estimatedCostUSD, estimatedCostZAR, lc, urgent: daysLeft<leadtime };
+  }).sort((a,b)=>a.daysLeft-b.daysLeft);
+
+  const urgent = analysis.filter(a=>a.urgent&&a.dailyUnits>0);
+  const watchlist = analysis.filter(a=>!a.urgent&&a.daysLeft<30&&a.dailyUnits>0);
+  const ok = analysis.filter(a=>a.daysLeft>=30||a.dailyUnits===0);
+  const totalReorderUSD = urgent.reduce((a,x)=>a+x.estimatedCostUSD,0);
+  const totalReorderZAR = urgent.reduce((a,x)=>a+x.estimatedCostZAR,0);
+
+  document.getElementById('reorderStats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Urgent Reorders</div><div class="stat-val neg">${urgent.length}</div><div class="stat-sub">Order within 7 days</div></div>
+    <div class="stat-card amber"><div class="stat-label">On Watchlist</div><div class="stat-val amber">${watchlist.length}</div><div class="stat-sub">Order within 30 days</div></div>
+    <div class="stat-card green"><div class="stat-label">Well Stocked</div><div class="stat-val green">${ok.length}</div></div>
+    <div class="stat-card orange"><div class="stat-label">Urgent Order Cost</div><div class="stat-val orange">$${totalReorderUSD.toFixed(0)}</div><div class="stat-sub">${R(totalReorderZAR)} ZAR landed</div></div>
+  `;
+
+  const renderRow = (item, tag) => `
+    <div class="card-sm" style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <div>
+          <div style="font-weight:600;font-size:13px;">${item.p.name} <span class="tag ${tag}">${tag==='tag-out'?'URGENT':'WATCH'}</span></div>
+          <div style="font-size:11px;color:var(--muted2);margin-top:2px;">${item.p.sku} · ${item.total} units left · ${item.dailyUnits.toFixed(1)}/day</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:var(--font-head);font-weight:700;font-size:16px;color:${tag==='tag-out'?'var(--red)':'var(--accent)'};">${item.daysLeft<999?Math.floor(item.daysLeft)+' days':'—'}</div>
+          <div style="font-size:10px;color:var(--muted2);">stock remaining</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px;">
+        <div><div style="color:var(--muted2)">Suggested order</div><div style="font-weight:600;">${item.suggestedQty} units</div></div>
+        <div><div style="color:var(--muted2)">Est. cost (USD)</div><div style="font-weight:600;">$${item.estimatedCostUSD.toFixed(0)}</div></div>
+        <div><div style="color:var(--muted2)">Landed (ZAR)</div><div style="font-weight:600;">${R(item.estimatedCostZAR)}</div></div>
+      </div>
+    </div>`;
+
+  document.getElementById('reorderContent').innerHTML = `
+    ${urgent.length?`<div style="font-family:var(--font-head);font-weight:700;font-size:14px;color:var(--red);margin-bottom:12px;">🚨 Urgent — Order Now</div>${urgent.map(i=>renderRow(i,'tag-out')).join('')}`:''}
+    ${watchlist.length?`<div style="font-family:var(--font-head);font-weight:700;font-size:14px;color:var(--accent);margin:16px 0 12px;">⚠ Watchlist — Order Within 30 Days</div>${watchlist.map(i=>renderRow(i,'tag-warn')).join('')}`:''}
+    ${!urgent.length&&!watchlist.length?'<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">All products are well stocked based on current sales velocity</div></div>':''}
+    ${ok.length?`<div style="font-size:12px;color:var(--muted2);margin-top:16px;">✓ ${ok.length} product(s) well stocked or with no recent sales</div>`:''}
+  `;
+}
+
+// ─── INVOICE READER ───────────────────────────────────────
+let invoiceImageData = null, invoiceImageMime = null;
+let extractedInvoiceData = null;
+
+function handleInvoiceFile(e) { processInvoiceFile(e.target.files[0]); }
+function handleInvoiceDrop(e) { e.preventDefault(); document.getElementById('uploadZone').classList.remove('drag'); processInvoiceFile(e.dataTransfer.files[0]); }
+
+function processInvoiceFile(file) {
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const result = ev.target.result;
+    const base64 = result.split(',')[1];
+    const mime = file.type || 'image/jpeg';
+    invoiceImageData = base64;
+    invoiceImageMime = mime;
+    const preview = document.getElementById('invoicePreview');
+    const img = document.getElementById('invoiceImg');
+    if(mime.startsWith('image/')) { img.src = result; preview.style.display='block'; }
+    else { img.src=''; preview.style.display='none'; }
+    document.getElementById('readInvoiceBtn').disabled = false;
+    document.getElementById('uploadZone').querySelector('.upload-text').innerHTML = `<strong>${file.name}</strong><br/>Ready to extract`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function readInvoice() {
+  if(!invoiceImageData) return;
+  const btn = document.getElementById('readInvoiceBtn');
+  btn.disabled=true; btn.textContent='✨ Extracting...';
+  const result = document.getElementById('invoiceExtracted');
+  result.innerHTML='<div style="color:var(--accent);font-size:13px;padding:12px;">Gemini is reading your invoice...</div>';
+  try {
+    const prompt = `You are extracting data from a supplier invoice image. Extract the following fields and return ONLY a valid JSON object with no markdown, no backticks, no explanation:
+{
+  "supplier": "supplier company name",
+  "invoiceRef": "invoice number or reference",
+  "date": "YYYY-MM-DD format if possible",
+  "currency": "ZAR or USD or CNY etc",
+  "totalAmount": 0.00,
+  "lineItems": [{"description": "item name", "qty": 1, "unitPrice": 0.00, "total": 0.00}],
+  "notes": "any relevant notes"
+}
+If a field cannot be determined, use null. For date, try to infer from the invoice. For currency, look for symbols or codes.`;
+    const reply = await callGemini(prompt, invoiceImageData, invoiceImageMime);
+    let data;
+    try {
+      const cleaned = reply.replace(/```json|```/g,'').trim();
+      data = JSON.parse(cleaned);
+    } catch {
+      throw new Error('Could not parse invoice data. Try a clearer image.');
+    }
+    extractedInvoiceData = data;
+    const batches = DB.batches();
+    result.innerHTML = `
+      <div class="form-row cols-2">
+        <div><label>Supplier</label><input id="ex_supplier" value="${data.supplier||''}"/></div>
+        <div><label>Invoice Ref</label><input id="ex_ref" value="${data.invoiceRef||''}"/></div>
+      </div>
+      <div class="form-row cols-2">
+        <div><label>Date</label><input type="date" id="ex_date" value="${data.date||today()}"/></div>
+        <div><label>Currency</label>
+          <select id="ex_currency">
+            <option value="ZAR" ${data.currency==='ZAR'?'selected':''}>ZAR</option>
+            <option value="USD" ${data.currency==='USD'?'selected':''}>USD</option>
+            <option value="CNY" ${data.currency==='CNY'?'selected':''}>CNY</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div><label>Total Amount</label><input type="number" id="ex_amount" value="${data.totalAmount||''}"/></div>
+        <div><label>Link to Batch</label>
+          <select id="ex_batch">
+            <option value="">— No Batch —</option>
+            ${batches.map(b=>`<option value="${b.id}">${b.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      ${data.lineItems?.length?`<div style="margin-top:8px;"><div style="font-size:11px;color:var(--muted2);margin-bottom:6px;font-family:var(--font-head);letter-spacing:.1em;text-transform:uppercase;">Line Items</div>
+      ${data.lineItems.map(l=>`<div class="card-sm" style="margin-bottom:6px;display:grid;grid-template-columns:1fr auto auto;gap:8px;font-size:12px;"><span>${l.description}</span><span class="mono">×${l.qty}</span><span class="mono">${R(l.total)}</span></div>`).join('')}
+      </div>`:''}
+      ${data.notes?`<div style="font-size:12px;color:var(--muted2);margin-top:8px;padding:8px;background:var(--bg);border-radius:6px;">${data.notes}</div>`:''}
+    `;
+    document.getElementById('invoiceSaveBtn').style.display='block';
+  } catch(e) {
+    result.innerHTML = `<div class="notice red">⚠ ${e.message}</div>`;
+  }
+  btn.disabled=false; btn.textContent='✨ Extract with Gemini';
+}
+
+function saveExtractedInvoice() {
+  const supplier = document.getElementById('ex_supplier')?.value.trim();
+  const amount = Number(document.getElementById('ex_amount')?.value||0);
+  if(!supplier||!amount) return alert('Supplier and amount required');
+  const currency = document.getElementById('ex_currency')?.value||'USD';
+  const batchId = document.getElementById('ex_batch')?.value||'';
+  const batch = batchId ? DB.batches().find(b=>b.id===batchId):null;
+  const rate = batch ? Number(batch.rate) : 18.5;
+  const zarAmount = currency==='ZAR'?amount:currency==='USD'?amount*rate:amount*rate/7.5;
+  const purchases = DB.purchases();
+  purchases.push({
+    id: Date.now().toString(),
+    date: document.getElementById('ex_date')?.value||today(),
+    supplier,
+    desc: `${document.getElementById('ex_ref')?.value||'Invoice'} (scanned)`,
+    batchId,
+    currency,
+    amount,
+    rate: currency!=='ZAR'?rate:null,
+    zarAmount,
+    status:'pending',
+  });
+  DB.savePurchases(purchases);
+  alert('Purchase saved! Go to Purchases to mark it as paid.');
+  document.getElementById('invoiceSaveBtn').style.display='none';
+  invoiceImageData=null; invoiceImageMime=null;
+  document.getElementById('invoicePreview').style.display='none';
+  document.getElementById('uploadZone').querySelector('.upload-text').innerHTML='<strong>Click to upload</strong> or drag & drop<br/>JPG, PNG, PDF supported';
+  document.getElementById('readInvoiceBtn').disabled=true;
+}
+
+// ═══════════════════════════════════════════════════════════
+// SEED + INIT
+// ═══════════════════════════════════════════════════════════
+function seedDemo() {
+  if(DB.products().length) return;
+  const batchId='batch_demo_1';
+  DB.saveBatches([{id:batchId,name:'Canton Fair Apr 2026',date:'2026-04-15',rate:'18.75',duty:'20',notes:'Guangzhou via freight forwarder'}]);
+  DB.saveProducts([
+    {id:'p1',name:'USB-C Fast Charger 65W',sku:'CHG-65W',usd:'6.50',batchId,amazonPrice:'249',takealotPrice:'259',duty:'20',shipping:'35',amazonSku:'CHG-65W-AMZ',takealotOfferId:'',channels:{amazon:true,takealot:true}},
+    {id:'p2',name:'Wireless Earbuds Pro',sku:'EAR-PRO',usd:'12.00',batchId,amazonPrice:'499',takealotPrice:'519',duty:'20',shipping:'45',channels:{amazon:true,takealot:true}},
+    {id:'p3',name:'Smart LED Strip 5m',sku:'LED-5M',usd:'8.00',batchId,amazonPrice:'349',takealotPrice:'369',duty:'15',shipping:'40',channels:{amazon:false,takealot:true}},
+  ]);
+  DB.saveStock({p1:{amazon:12,takealot:8,onhand:20},p2:{amazon:5,takealot:3,onhand:10},p3:{amazon:0,takealot:15,onhand:25}});
+  const fmtD=(offset=0)=>{const x=new Date();x.setDate(x.getDate()-offset);return x.toISOString().split('T')[0];};
+  DB.saveSales([
+    {id:'s1',date:fmtD(0),pid:'p1',productName:'USB-C Fast Charger 65W',sku:'CHG-65W',channel:'amazon',qty:3,price:249,revenue:747,cogs:3*((6.5*18.75)*1.2*1.15+35),grossProfit:747-3*((6.5*18.75)*1.2*1.15+35)},
+    {id:'s2',date:fmtD(0),pid:'p2',productName:'Wireless Earbuds Pro',sku:'EAR-PRO',channel:'takealot',qty:1,price:519,revenue:519,cogs:(12*18.75)*1.2*1.15+45,grossProfit:519-((12*18.75)*1.2*1.15+45)},
+    {id:'s3',date:fmtD(1),pid:'p1',productName:'USB-C Fast Charger 65W',sku:'CHG-65W',channel:'takealot',qty:5,price:259,revenue:1295,cogs:5*((6.5*18.75)*1.2*1.15+35),grossProfit:1295-5*((6.5*18.75)*1.2*1.15+35)},
+  ]);
+  // Demo opening balance + purchases
+  DB.saveBankMeta({ openingBalance: 15000, openingDate: fmtD(30) });
+  DB.savePurchases([
+    { id:'pu1', date:fmtD(25), supplier:'Guangzhou Electronics Co.', desc:'50x USB-C Chargers — INV-2026-012', batchId, currency:'USD', amount:325, rate:18.75, zarAmount:6093.75, status:'paid' },
+    { id:'pu2', date:fmtD(10), supplier:'Guangzhou Electronics Co.', desc:'20x Wireless Earbuds — INV-2026-018', batchId, currency:'USD', amount:240, rate:18.75, zarAmount:4500, status:'paid' },
+    { id:'pu3', date:fmtD(3), supplier:'SA Freight Solutions', desc:'Customs clearance + local delivery', batchId:'', currency:'ZAR', amount:1850, rate:null, zarAmount:1850, status:'paid' },
+    { id:'pu4', date:fmtD(1), supplier:'Guangzhou LED Supply', desc:'30x LED Strips 5m — INV-2026-021', batchId, currency:'USD', amount:240, rate:18.75, zarAmount:4500, status:'pending' },
+  ]);
+}
+
+function init() {
+  document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
+  seedDemo();
+  loadSettings();
+  setupAutoSync();
+  renderDashboard();
+}
+
+init();
+</script>
+
+<!-- Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registered!', reg))
+        .catch(err => console.error('Service Worker registration failed: ', err));
+    });
+  }
+</script>
+
+</body>
+</html>
