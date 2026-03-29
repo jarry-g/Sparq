@@ -5,11 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="theme-color" content="#0a0a0f"/>
-
-<!-- PWA Manifest & Icons -->
-<link rel="manifest" href="/manifest.json"/>
-<link rel="apple-touch-icon" href="/icon-192.png"/>
-
 <title>Sparq Enterprise</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
@@ -222,6 +217,16 @@ select option{background:var(--bg3);}
 .price-tier-label{font-size:12px;color:var(--muted2);}
 .price-tier-val{font-family:var(--font-head);font-weight:700;font-size:16px;}
 
+/* RETURNS */
+.return-cost-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px;border-bottom:1px dashed rgba(42,42,56,.5);}
+.return-cost-row:last-child{border-bottom:none;}
+.return-cost-label{color:var(--muted2);}
+.return-summary-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+.condition-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;}
+.condition-new{background:rgba(48,208,128,.12);color:var(--green);}
+.condition-used{background:rgba(240,192,64,.12);color:var(--accent);}
+.condition-damaged{background:rgba(240,80,80,.12);color:var(--red);}
+
 @media(max-width:768px){
   #app{grid-template-columns:1fr;grid-template-rows:60px auto 1fr;}
   #sidebar{grid-row:2;flex-direction:row;overflow-x:auto;padding:8px 12px;border-right:none;border-bottom:1px solid var(--border);gap:4px;}
@@ -255,6 +260,7 @@ select option{background:var(--bg3);}
   <div class="nav-item" onclick="navigate('stock')"><span class="nav-icon">🗃️</span> Stock Levels</div>
   <div class="nav-section">Commerce</div>
   <div class="nav-item" onclick="navigate('sales')"><span class="nav-icon">💳</span> Daily Sales</div>
+  <div class="nav-item" onclick="navigate('returns')"><span class="nav-icon">↩️</span> Returns</div>
   <div class="nav-item" onclick="navigate('costing')"><span class="nav-icon">🧮</span> Cost Calculator</div>
   <div class="nav-section">Finance</div>
   <div class="nav-item" onclick="navigate('accounting')"><span class="nav-icon">📊</span> Accounting</div>
@@ -279,7 +285,7 @@ select option{background:var(--bg3);}
   <!-- DASHBOARD -->
   <div class="page active" id="page-dashboard">
     <div class="page-header">
-      <div class="page-title">Good morning, <span>Jarred</span></div>
+      <div class="page-title" id="dashGreeting">Good morning, <span>Jarred</span></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary" onclick="syncAll()">⟳ Quick Sync</button>
         <button class="btn btn-primary" onclick="openModal('modalSale')">+ Log Sale</button>
@@ -340,6 +346,42 @@ select option{background:var(--bg3);}
     <div class="card" style="overflow-x:auto;">
       <table class="tbl"><thead><tr><th>Date</th><th>Product</th><th>Channel</th><th>Qty</th><th>Price</th><th>Revenue</th><th>COGS</th><th>Gross Profit</th><th></th></tr></thead>
       <tbody id="salesBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- RETURNS -->
+  <div class="page" id="page-returns">
+    <div class="page-header">
+      <div class="page-title">↩️ <span>Returns</span></div>
+      <button class="btn btn-primary" onclick="openModal('modalReturn')">+ Log Return</button>
+    </div>
+    <div class="stats-grid" id="returnStats"></div>
+    <div class="two-col" style="margin-bottom:20px;">
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:14px;">Cost of Returns by Channel</div>
+        <div id="returnsByChannel"></div>
+      </div>
+      <div class="card">
+        <div style="font-family:var(--font-head);font-weight:700;margin-bottom:14px;">Top Returned Products</div>
+        <div id="returnsByProduct"></div>
+      </div>
+    </div>
+    <div class="card" style="overflow-x:auto;">
+      <div style="font-family:var(--font-head);font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;">
+        Return Log
+        <select id="returnFilter" onchange="renderReturns()" style="width:auto;padding:6px 12px;font-size:12px;">
+          <option value="all">All Channels</option>
+          <option value="amazon">Amazon</option>
+          <option value="takealot">Takealot</option>
+        </select>
+      </div>
+      <table class="tbl">
+        <thead><tr>
+          <th>Date</th><th>Product</th><th>Channel</th><th>Reason</th><th>Condition</th>
+          <th>Refund Issued</th><th>Return Shipping</th><th>Platform Fee</th><th>Net Cost</th><th>Stock</th><th></th>
+        </tr></thead>
+        <tbody id="returnsBody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -962,6 +1004,66 @@ select option{background:var(--bg3);}
   </div>
 </div>
 
+<!-- Log Return Modal -->
+<div class="overlay" id="modalReturn">
+  <div class="modal">
+    <div class="modal-header"><div class="modal-title">Log Return</div><button class="modal-close" onclick="closeModal('modalReturn')">✕</button></div>
+    <div class="form-row cols-2">
+      <div><label>Date</label><input type="date" id="ret_date"/></div>
+      <div><label>Channel</label>
+        <select id="ret_channel">
+          <option value="amazon">Amazon</option>
+          <option value="takealot">Takealot</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Product</label><select id="ret_product"></select></div>
+      <div><label>Quantity Returned</label><input type="number" id="ret_qty" value="1" min="1"/></div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Return Reason</label>
+        <select id="ret_reason">
+          <option value="defective">Defective / Not working</option>
+          <option value="wrong_item">Wrong item received</option>
+          <option value="not_as_described">Not as described</option>
+          <option value="changed_mind">Customer changed mind</option>
+          <option value="damaged_shipping">Damaged in shipping</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div><label>Item Condition on Return</label>
+        <select id="ret_condition">
+          <option value="new">Like New — can resell</option>
+          <option value="used">Used — may resell discounted</option>
+          <option value="damaged">Damaged — write off</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Refund Issued to Customer (ZAR)</label><input type="number" id="ret_refund" placeholder="0.00" oninput="calcReturnCost()"/></div>
+      <div><label>Return Shipping Cost (ZAR)</label><input type="number" id="ret_shipping" placeholder="0.00" oninput="calcReturnCost()"/></div>
+    </div>
+    <div class="form-row cols-2">
+      <div><label>Platform Restocking / Fee (ZAR)</label><input type="number" id="ret_fee" placeholder="0.00" oninput="calcReturnCost()"/></div>
+      <div>
+        <label>Net Cost to Business</label>
+        <input type="number" id="ret_net_cost" readonly style="opacity:.7;background:rgba(240,80,80,.06);border-color:rgba(240,80,80,.2);color:var(--red);font-weight:700;"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div><label>Notes (optional)</label><input id="ret_notes" placeholder="e.g. Customer said charger stopped after 2 days"/></div>
+    </div>
+    <div style="background:rgba(240,192,64,.06);border:1px solid rgba(240,192,64,.15);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--accent);margin-bottom:14px;">
+      ⚡ Stock will be automatically adjusted: <strong>"Like New"</strong> and <strong>"Used"</strong> items return to On Hand stock. <strong>"Damaged"</strong> items are written off.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('modalReturn')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReturn()">Log Return</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════
 // DATA STORE
@@ -978,6 +1080,7 @@ const DB = {
   purchases: () => DB.get('purchases') || [],
   adjustments: () => DB.get('adjustments') || [],
   bankMeta: () => DB.get('bankMeta') || { openingBalance: 0, openingDate: null },
+  returns: () => DB.get('returns') || [],
   saveProducts: v => DB.set('products',v),
   saveSales: v => DB.set('sales',v),
   saveStock: v => DB.set('stock',v),
@@ -987,6 +1090,7 @@ const DB = {
   savePurchases: v => DB.set('purchases',v),
   saveAdjustments: v => DB.set('adjustments',v),
   saveBankMeta: v => DB.set('bankMeta',v),
+  saveReturns: v => DB.set('returns',v),
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -1395,7 +1499,7 @@ function navigate(page) {
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>{ if(n.getAttribute('onclick')?.includes("'"+page+"'")) n.classList.add('active'); });
-  const renders = {dashboard:renderDashboard,products:renderProducts,stock:renderStock,sales:renderSales,accounting:renderAccounting,batches:renderBatches,sync:()=>{renderLog();},settings:loadSettings,bank:renderBank,purchases:renderPurchases,cashflow:renderCashflow,ai:initChat,insights:()=>{},forecast:generateForecast,pricing:initPricing,reorder:generateReorder,invoice:()=>{}};
+  const renders = {dashboard:renderDashboard,products:renderProducts,stock:renderStock,sales:renderSales,returns:renderReturns,accounting:renderAccounting,batches:renderBatches,sync:()=>{renderLog();},settings:loadSettings,bank:renderBank,purchases:renderPurchases,cashflow:renderCashflow,ai:initChat,insights:()=>{},forecast:generateForecast,pricing:initPricing,reorder:generateReorder,invoice:()=>{}};
   if(renders[page]) renders[page]();
 }
 
@@ -1405,9 +1509,13 @@ function navigate(page) {
 function openModal(id) {
   document.getElementById(id).classList.add('open');
   if(id==='modalProduct') populateBatchSelect();
-  if(id==='modalStock'||id==='modalSale') populateProductSelect();
+  if(id==='modalStock'||id==='modalSale') resetProductSelects();
   if(id==='modalSale') document.getElementById('sl_date').value = today();
   if(id==='modalBatch') document.getElementById('b_date').value = today();
+  if(id==='modalPurchase') { populatePurchaseBatch(); document.getElementById('pu_date').value=today(); document.getElementById('pu_rate_wrap').style.display='none'; }
+  if(id==='modalOpeningBalance') document.getElementById('ob_date').value=today();
+  if(id==='modalAdjust') document.getElementById('adj_date').value=today();
+  if(id==='modalReturn') { resetReturnProductSelect(); document.getElementById('ret_date').value=today(); document.getElementById('ret_net_cost').value=''; }
 }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
@@ -1456,16 +1564,6 @@ function resetProductSelects() {
     DB.products().forEach(p=>{ const o=document.createElement('option'); o.value=p.id; o.textContent=p.name+' ('+p.sku+')'; sel.appendChild(o); });
   });
 }
-
-// Override openModal to reset selects
-const _origOpen = openModal;
-window.openModal = function(id) {
-  if(id==='modalStock'||id==='modalSale') resetProductSelects();
-  if(id==='modalPurchase') { populatePurchaseBatch(); document.getElementById('pu_date').value=today(); document.getElementById('pu_rate_wrap').style.display='none'; }
-  if(id==='modalOpeningBalance') document.getElementById('ob_date').value=today();
-  if(id==='modalAdjust') document.getElementById('adj_date').value=today();
-  _origOpen(id);
-};
 
 function fillSalePrice() {
   const pid = document.getElementById('sl_product').value;
@@ -1849,7 +1947,10 @@ function buildLedgerEntries(period) {
 
 function renderBank() {
   const period = document.getElementById('bankPeriod')?.value || 'all';
-  const { entries, finalBalance } = buildLedgerEntries(period);
+  // All-time balance is always authoritative for the hero number
+  const { finalBalance } = buildLedgerEntries('all');
+  // Period-filtered entries for the stats and ledger display
+  const { entries } = buildLedgerEntries(period);
   const totalIn = entries.filter(e=>e.amount>0&&e.type!=='opening').reduce((a,e)=>a+e.amount,0);
   const totalOut = Math.abs(entries.filter(e=>e.amount<0).reduce((a,e)=>a+e.amount,0));
   const balEl = document.getElementById('bankBalanceDisplay');
@@ -1894,7 +1995,10 @@ function renderCashflow() {
   const grossProfit = totalRevenue - totalCOGS;
   const paidPurchases = purchases.filter(p=>p.status==='paid').reduce((a,p)=>a+p.zarAmount,0);
   const pendingPurchases = purchases.filter(p=>p.status==='pending').reduce((a,p)=>a+p.zarAmount,0);
-  const netProfit = grossProfit - paidPurchases;
+  let rets = DB.returns();
+  if(period !== 'all') { const cutStr = new Date(Date.now()-Number(period)*86400000).toISOString().split('T')[0]; rets = rets.filter(r=>r.date>=cutStr); }
+  const totalReturnCost = rets.reduce((a,r)=>a+r.netCost,0);
+  const netProfit = grossProfit - paidPurchases - totalReturnCost;
   const grossMargin = totalRevenue?(grossProfit/totalRevenue*100):0;
   const netMargin = totalRevenue?(netProfit/totalRevenue*100):0;
 
@@ -1918,7 +2022,8 @@ function renderCashflow() {
     <div class="cost-row"><span class="c-label">COGS (landed cost of sales)</span><span class="c-val neg">${R(totalCOGS)}</span></div>
     <div class="cost-row"><span class="c-label">Stock Purchases (paid)</span><span class="c-val neg">${R(paidPurchases)}</span></div>
     <div class="cost-row"><span class="c-label">Stock Purchases (pending)</span><span class="c-val neutral">${R(pendingPurchases)}</span></div>
-    <div class="cost-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:10px;font-weight:700;"><span class="c-label" style="color:var(--text)">Total Out</span><span class="c-val neg" style="font-size:15px;">${R(totalCOGS+paidPurchases)}</span></div>
+    <div class="cost-row"><span class="c-label">Returns (refunds + shipping + fees)</span><span class="c-val neg">${R(totalReturnCost)}</span></div>
+    <div class="cost-row" style="margin-top:8px;border-top:1px solid var(--border);padding-top:10px;font-weight:700;"><span class="c-label" style="color:var(--text)">Total Out</span><span class="c-val neg" style="font-size:15px;">${R(totalCOGS+paidPurchases+totalReturnCost)}</span></div>
   `;
   document.getElementById('cfPL').innerHTML = `
     <div class="cost-row"><span class="c-label">Gross Revenue</span><span class="c-val pos">${R(totalRevenue)}</span></div>
@@ -1926,6 +2031,7 @@ function renderCashflow() {
     <div class="cost-row" style="font-weight:600;"><span class="c-label" style="color:var(--text)">= Gross Profit</span><span class="c-val ${grossProfit>=0?'pos':'neg'}">${R(grossProfit)} <span style="font-size:11px;opacity:.7;">${pct(grossMargin)}</span></span></div>
     <div style="margin:10px 0;border-top:1px dashed var(--border);"></div>
     <div class="cost-row"><span class="c-label">Less: Stock Purchases (paid)</span><span class="c-val neg">(${R(paidPurchases)})</span></div>
+    <div class="cost-row"><span class="c-label">Less: Returns Cost</span><span class="c-val neg">(${R(totalReturnCost)})</span></div>
     <div style="margin:10px 0;border-top:1px solid var(--border);"></div>
     <div class="cost-row" style="font-weight:700;font-size:15px;"><span class="c-label" style="color:${netProfit>=0?'var(--green)':'var(--red)'};font-size:13px;letter-spacing:.05em;">NET PROFIT</span><span class="c-val ${netProfit>=0?'pos':'neg'}">${R(netProfit)} <span style="font-size:11px;opacity:.7;">${pct(netMargin)}</span></span></div>
     ${pendingPurchases>0?`<div style="margin-top:12px;padding:10px 12px;background:rgba(240,192,64,.06);border-radius:8px;font-size:12px;color:var(--accent);">⚠ ${R(pendingPurchases)} in pending purchases not yet deducted.</div>`:''}
@@ -1934,10 +2040,192 @@ function renderCashflow() {
   sales.forEach(s=>{ if(!byDate[s.date])byDate[s.date]={revenue:0,purchases:0}; byDate[s.date].revenue+=s.revenue; });
   purchases.filter(p=>p.status==='paid').forEach(p=>{ if(!byDate[p.date])byDate[p.date]={revenue:0,purchases:0}; byDate[p.date].purchases+=p.zarAmount; });
   let running = DB.bankMeta().openingBalance || 0;
-  document.getElementById('cfDailyBody').innerHTML = Object.keys(byDate).sort().reverse().map(d=>{
+  const sortedDays = Object.keys(byDate).sort(); // ascending
+  const rows = sortedDays.map(d=>{
     const r=byDate[d]; const net=r.revenue-r.purchases; running+=net;
-    return `<tr><td>${d}</td><td class="mono pos">${R(r.revenue)}</td><td class="mono ${r.purchases?'neg':'muted2'}">${r.purchases?R(r.purchases):'—'}</td><td class="mono ${net>=0?'pos':'neg'}">${R(net)}</td><td class="mono">${R(running)}</td></tr>`;
-  }).join('') || '<tr><td colspan="5"><div class="empty"><div class="empty-text">No data</div></div></td></tr>';
+    return {d, r, net, balance: running};
+  });
+  document.getElementById('cfDailyBody').innerHTML = rows.reverse().map(({d,r,net,balance})=>
+    `<tr><td>${d}</td><td class="mono pos">${R(r.revenue)}</td><td class="mono ${r.purchases?'neg':''}">${r.purchases?R(r.purchases):'—'}</td><td class="mono ${net>=0?'pos':'neg'}">${R(net)}</td><td class="mono">${R(balance)}</td></tr>`
+  ).join('') || '<tr><td colspan="5"><div class="empty"><div class="empty-text">No data</div></div></td></tr>';
+}
+
+// ═══════════════════════════════════════════════════════════
+// RETURNS
+// ═══════════════════════════════════════════════════════════
+
+function resetReturnProductSelect() {
+  const sel = document.getElementById('ret_product');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Select Product —</option>';
+  DB.products().forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.id; o.textContent = p.name + ' (' + p.sku + ')';
+    sel.appendChild(o);
+  });
+}
+
+function calcReturnCost() {
+  const refund   = Number(document.getElementById('ret_refund').value   || 0);
+  const shipping = Number(document.getElementById('ret_shipping').value || 0);
+  const fee      = Number(document.getElementById('ret_fee').value      || 0);
+  // Net cost = money paid out (refund + shipping + fee)
+  // If stock comes back and can be resold, business recovers the landed cost — but we
+  // track gross cash impact here. P&L adjustment happens on save.
+  document.getElementById('ret_net_cost').value = (refund + shipping + fee).toFixed(2);
+}
+
+function saveReturn() {
+  const pid = document.getElementById('ret_product').value;
+  if(!pid) return alert('Select a product');
+  const qty       = Number(document.getElementById('ret_qty').value      || 1);
+  const refund    = Number(document.getElementById('ret_refund').value   || 0);
+  const shipping  = Number(document.getElementById('ret_shipping').value || 0);
+  const fee       = Number(document.getElementById('ret_fee').value      || 0);
+  const netCost   = refund + shipping + fee;
+  const condition = document.getElementById('ret_condition').value;
+  const channel   = document.getElementById('ret_channel').value;
+  const prod      = DB.products().find(p => p.id === pid);
+  const lc        = landedCost(prod, DB.batches());
+
+  const ret = {
+    id:        Date.now().toString(),
+    date:      document.getElementById('ret_date').value || today(),
+    pid,
+    productName: prod.name,
+    sku:       prod.sku,
+    channel,
+    qty,
+    reason:    document.getElementById('ret_reason').value,
+    condition,
+    refund,
+    shipping,
+    fee,
+    netCost,
+    landedCostPerUnit: lc.total,
+    // recovered value = landed cost of units back in stock (0 if damaged)
+    recoveredValue: condition !== 'damaged' ? lc.total * qty : 0,
+    writtenOff: condition === 'damaged' ? lc.total * qty : 0,
+    notes: document.getElementById('ret_notes').value,
+  };
+
+  const rets = DB.returns();
+  rets.push(ret);
+  DB.saveReturns(rets);
+
+  // Adjust stock — resellable items go back to onhand, damaged written off
+  if(condition !== 'damaged') {
+    const stock = DB.stock();
+    if(!stock[pid]) stock[pid] = { amazon: 0, takealot: 0, onhand: 0 };
+    stock[pid].onhand += qty;
+    DB.saveStock(stock);
+  }
+
+  // Log as bank ledger adjustment (refund + costs leave the account)
+  const adjs = DB.adjustments();
+  adjs.push({
+    id: 'ret_' + ret.id,
+    date: ret.date,
+    type: 'debit',
+    amount: netCost,
+    desc: `Return: ${prod.name} × ${qty} (${channel}) — refund R${refund} + shipping R${shipping} + fee R${fee}`,
+  });
+  DB.saveAdjustments(adjs);
+
+  closeModal('modalReturn');
+  renderReturns();
+  renderDashboard();
+
+  // Clear modal fields
+  ['ret_refund','ret_shipping','ret_fee','ret_net_cost','ret_notes'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('ret_qty').value = '1';
+}
+
+function deleteReturn(id) {
+  if(!confirm('Delete this return? Stock and bank adjustments will NOT be reversed automatically.')) return;
+  DB.saveReturns(DB.returns().filter(r => r.id !== id));
+  renderReturns();
+}
+
+function renderReturns() {
+  const filterChannel = document.getElementById('returnFilter')?.value || 'all';
+  let rets = [...DB.returns()].sort((a,b) => b.date.localeCompare(a.date));
+  if(filterChannel !== 'all') rets = rets.filter(r => r.channel === filterChannel);
+  const all = DB.returns(); // unfiltered for stats
+
+  const totalNetCost   = all.reduce((a,r) => a + r.netCost, 0);
+  const totalRefunds   = all.reduce((a,r) => a + r.refund, 0);
+  const totalShipping  = all.reduce((a,r) => a + r.shipping, 0);
+  const totalFees      = all.reduce((a,r) => a + r.fee, 0);
+  const totalWrittenOff = all.reduce((a,r) => a + r.writtenOff, 0);
+  const totalUnits     = all.reduce((a,r) => a + r.qty, 0);
+
+  document.getElementById('returnStats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Return Cost</div><div class="stat-val neg">${R(totalNetCost)}</div><div class="stat-sub">${all.length} returns · ${totalUnits} units</div></div>
+    <div class="stat-card amber"><div class="stat-label">Refunds Issued</div><div class="stat-val amber">${R(totalRefunds)}</div></div>
+    <div class="stat-card orange"><div class="stat-label">Shipping + Fees</div><div class="stat-val orange">${R(totalShipping + totalFees)}</div></div>
+    <div class="stat-card"><div class="stat-label">Stock Written Off</div><div class="stat-val neg">${R(totalWrittenOff)}</div></div>
+  `;
+
+  // By channel
+  const byChannel = { amazon: { cost:0, units:0, count:0 }, takealot: { cost:0, units:0, count:0 }};
+  all.forEach(r => { if(byChannel[r.channel]) { byChannel[r.channel].cost+=r.netCost; byChannel[r.channel].units+=r.qty; byChannel[r.channel].count++; }});
+  const maxCh = Math.max(byChannel.amazon.cost, byChannel.takealot.cost, 1);
+  document.getElementById('returnsByChannel').innerHTML = ['amazon','takealot'].map(ch => `
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <span><span class="tag tag-${ch}">${ch}</span> <span style="font-size:12px;color:var(--muted2)">${byChannel[ch].count} returns · ${byChannel[ch].units} units</span></span>
+        <span class="mono neg">${R(byChannel[ch].cost)}</span>
+      </div>
+      <div class="progress"><div class="progress-bar" style="width:${byChannel[ch].cost/maxCh*100}%;background:var(--red)"></div></div>
+    </div>`).join('') + (all.length===0?'<div class="empty" style="padding:20px 0;"><div class="empty-text">No returns yet</div></div>':'');
+
+  // By product
+  const byProd = {};
+  all.forEach(r => {
+    if(!byProd[r.pid]) byProd[r.pid] = { name:r.productName, cost:0, units:0, count:0 };
+    byProd[r.pid].cost  += r.netCost;
+    byProd[r.pid].units += r.qty;
+    byProd[r.pid].count++;
+  });
+  document.getElementById('returnsByProduct').innerHTML = Object.values(byProd)
+    .sort((a,b) => b.cost-a.cost).slice(0,5).map(p => `
+    <div class="return-summary-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div><div style="font-size:13px;font-weight:600;">${p.name}</div>
+          <div style="font-size:11px;color:var(--muted2)">${p.count} return${p.count>1?'s':''} · ${p.units} unit${p.units>1?'s':''}</div>
+        </div>
+        <div class="mono neg" style="font-size:15px;font-weight:700;">${R(p.cost)}</div>
+      </div>
+    </div>`).join('') || '<div class="empty" style="padding:20px 0;"><div class="empty-text">No returns yet</div></div>';
+
+  // Return log table
+  const reasonLabels = {
+    defective:'Defective', wrong_item:'Wrong Item', not_as_described:'Not as Described',
+    changed_mind:'Changed Mind', damaged_shipping:'Damaged in Shipping', other:'Other',
+  };
+  document.getElementById('returnsBody').innerHTML = rets.length ? rets.map(r => {
+    const condClass = r.condition==='new'?'condition-new':r.condition==='used'?'condition-used':'condition-damaged';
+    const condLabel = r.condition==='new'?'Like New':r.condition==='used'?'Used':'Damaged';
+    const stockAction = r.condition!=='damaged'
+      ? `<span class="tag tag-instock">+${r.qty} OnHand</span>`
+      : `<span class="tag tag-out">Written Off</span>`;
+    return `<tr>
+      <td>${r.date}</td>
+      <td><strong>${r.productName}</strong><br/><span style="font-size:11px;color:var(--muted2)">${r.sku}</span></td>
+      <td><span class="tag tag-${r.channel}">${r.channel}</span></td>
+      <td style="font-size:12px;">${reasonLabels[r.reason]||r.reason}${r.notes?`<br/><span style="color:var(--muted2);font-size:11px;">${r.notes}</span>`:''}</td>
+      <td><span class="condition-badge ${condClass}">${condLabel}</span></td>
+      <td class="mono neg">${r.refund>0?R(r.refund):'—'}</td>
+      <td class="mono ${r.shipping>0?'neg':''}">${r.shipping>0?R(r.shipping):'—'}</td>
+      <td class="mono ${r.fee>0?'neg':''}">${r.fee>0?R(r.fee):'—'}</td>
+      <td class="mono neg" style="font-weight:700;">${R(r.netCost)}</td>
+      <td>${stockAction}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteReturn('${r.id}')">✕</button></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="11"><div class="empty"><div class="empty-icon">↩️</div><div class="empty-text">No returns logged yet</div></div></td></tr>';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1969,13 +2257,17 @@ function buildBusinessContext() {
   const recentSales = [...sales].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10)
     .map(s=>`${s.date}: ${s.productName} × ${s.qty} on ${s.channel} = R${s.revenue.toFixed(2)} (GP R${s.grossProfit.toFixed(2)})`).join('\n');
 
+  const totalReturns = DB.returns().reduce((a,r)=>a+r.netCost,0);
+  const totalReturnUnits = DB.returns().reduce((a,r)=>a+r.qty,0);
+
   return `You are Sparq AI, a business intelligence assistant for Sparq Holdings — an electronics importer in Durban, South Africa that sells on Amazon and Takealot. The owner is Jarred. Answer in plain English, be concise and specific. Use ZAR (R) for all currency unless asked otherwise.
 
 BUSINESS SNAPSHOT:
 - Total revenue all time: R${totalRev.toFixed(2)}
 - Total gross profit: R${totalGP.toFixed(2)} (${totalRev?(totalGP/totalRev*100).toFixed(1):0}% margin)
 - Stock purchases paid: R${totalPurchases.toFixed(2)}
-- Net profit: R${(totalGP-totalPurchases).toFixed(2)}
+- Returns cost: R${totalReturns.toFixed(2)} (${totalReturnUnits} units returned)
+- Net profit: R${(totalGP-totalPurchases-totalReturns).toFixed(2)}
 - Bank balance (Sparq Holdings): R${finalBalance.toFixed(2)}
 - Opening balance: R${meta.openingBalance||0} (as of ${meta.openingDate||'not set'})
 
@@ -1991,7 +2283,7 @@ PURCHASE HISTORY: ${purchases.length} invoices, R${totalPurchases.toFixed(2)} pa
 async function callGemini(prompt, imageBase64 = null, imageMime = null) {
   const key = getGeminiKey();
   if(!key) throw new Error('No Gemini API key. Go to Settings → AI Configuration and add your key from aistudio.google.com');
-  const model = imageBase64 ? 'gemini-1.5-flash' : 'gemini-1.5-flash';
+  const model = imageBase64 ? 'gemini-1.5-flash' : 'gemini-1.5-pro';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const parts = [];
   if(imageBase64) parts.push({ inlineData: { mimeType: imageMime, data: imageBase64 }});
@@ -2043,23 +2335,37 @@ async function sendChat() {
   input.value = '';
   const btn = document.getElementById('chatSendBtn');
   btn.disabled = true;
-
   const msgs = document.getElementById('chatMessages');
-  msgs.innerHTML += `<div class="ai-msg user">${q}</div>`;
-  msgs.innerHTML += `<div class="ai-msg assistant thinking" id="thinkingMsg">Sparq is thinking...</div>`;
+
+  const userDiv = document.createElement('div');
+  userDiv.className = 'ai-msg user';
+  userDiv.textContent = q;
+  msgs.appendChild(userDiv);
+
+  const thinkDiv = document.createElement('div');
+  thinkDiv.className = 'ai-msg assistant thinking';
+  thinkDiv.id = 'thinkingMsg';
+  thinkDiv.textContent = 'Sparq is thinking...';
+  msgs.appendChild(thinkDiv);
   msgs.scrollTop = msgs.scrollHeight;
 
   chatHistory.push({ role: 'user', content: q });
-
   try {
     const context = buildBusinessContext();
     const historyStr = chatHistory.slice(-6).map(m=>`${m.role==='user'?'Jarred':'Sparq'}: ${m.content}`).join('\n');
     const prompt = `${context}\n\nCONVERSATION:\n${historyStr}\n\nSparq:`;
     const reply = await callGemini(prompt);
     chatHistory.push({ role: 'assistant', content: reply });
-    document.getElementById('thinkingMsg').outerHTML = `<div class="ai-msg assistant">${reply.replace(/\n/g,'<br/>')}</div>`;
+    const replyDiv = document.createElement('div');
+    replyDiv.className = 'ai-msg assistant';
+    replyDiv.innerHTML = reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br/>');
+    thinkDiv.replaceWith(replyDiv);
   } catch(e) {
-    document.getElementById('thinkingMsg').outerHTML = `<div class="ai-msg assistant" style="color:var(--red)">⚠ ${e.message}</div>`;
+    const errDiv = document.createElement('div');
+    errDiv.className = 'ai-msg assistant';
+    errDiv.style.color = 'var(--red)';
+    errDiv.textContent = '⚠ ' + e.message;
+    thinkDiv.replaceWith(errDiv);
   }
   btn.disabled = false;
   msgs.scrollTop = msgs.scrollHeight;
@@ -2132,16 +2438,17 @@ function generateForecast() {
 
   // 7-day chart
   const maxDay = avgDailyRev * 1.3;
+  // Stable variance per day using simple hash (no Math.random — stays consistent on re-render)
+  const stableVariance = (dateStr) => { let h=0; for(let i=0;i<dateStr.length;i++) h=(h*31+dateStr.charCodeAt(i))&0xffffffff; return 0.82+((h>>>0)%36)/100; };
   const next7 = Array.from({length:7},(_,i)=>{
     const d = new Date(); d.setDate(d.getDate()+i+1);
-    const dateStr = d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
-    const variance = 0.85 + Math.random()*0.3;
-    const projected = avgDailyRev * variance;
-    return {dateStr, projected};
+    const dateStr = d.toISOString().split('T')[0];
+    const label = d.toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
+    return {label, projected: avgDailyRev * stableVariance(dateStr)};
   });
   document.getElementById('forecastChart').innerHTML = next7.map(d=>`
     <div class="forecast-bar-row">
-      <span style="font-size:11px;color:var(--muted2)">${d.dateStr}</span>
+      <span style="font-size:11px;color:var(--muted2)">${d.label}</span>
       <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,d.projected/maxDay*100)}%"></div></div>
       <span class="mono" style="font-size:12px;text-align:right;">${R(d.projected)}</span>
     </div>`).join('');
@@ -2477,6 +2784,10 @@ function seedDemo() {
 }
 
 function init() {
+  const hr = new Date().getHours();
+  const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  const greetEl = document.getElementById('dashGreeting');
+  if(greetEl) greetEl.innerHTML = `${greeting}, <span>Jarred</span>`;
   document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
   seedDemo();
   loadSettings();
@@ -2486,17 +2797,5 @@ function init() {
 
 init();
 </script>
-
-<!-- Service Worker Registration -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
-        .then(reg => console.log('Service Worker registered!', reg))
-        .catch(err => console.error('Service Worker registration failed: ', err));
-    });
-  }
-</script>
-
 </body>
 </html>
